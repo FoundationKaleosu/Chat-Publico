@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foundation Kaleosu</title>
 <style>
+/* ---------- ESTILOS ---------- */
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;}
 body{background-color:#121212;display:flex;justify-content:center;align-items:center;height:100vh;color:#E1E1E1;}
 .container{width:100%;max-width:480px;background-color:#1E1E1E;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.7);}
@@ -95,7 +96,7 @@ button:hover{background-color:#056162;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onValue, set, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, set, update, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
@@ -118,9 +119,8 @@ let currentUserName = '';
 let currentChat = '';
 let messagesListener;
 let typingTimeout;
-let unreadCounts = {}; // contador de mensagens não lidas
 
-// Mantém usuário logado
+// ---------- AUTENTICAÇÃO ----------
 onAuthStateChanged(auth, async (user) => {
   if (user) {
     const snapshot = await get(ref(db,'users/'+user.uid));
@@ -131,8 +131,8 @@ onAuthStateChanged(auth, async (user) => {
 
     // Online e onDisconnect
     const userStatusRef = ref(db,'users/'+user.uid+'/status');
-    await set(userStatusRef, 'online'); // online = verde
-    onDisconnect(userStatusRef).set('offline'); // offline = vermelho
+    await set(userStatusRef, 'online'); 
+    onDisconnect(userStatusRef).set('offline'); 
 
     await requestNotificationPermission();
     loadContacts();
@@ -144,7 +144,6 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-// Notificações
 async function requestNotificationPermission(){
   try{
     const permission = await Notification.requestPermission();
@@ -155,7 +154,7 @@ async function requestNotificationPermission(){
   } catch(e){ console.error(e);}
 }
 
-// Login/Cadastro
+// ---------- LOGIN / CADASTRO ----------
 function showRegister(){ document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex'; }
 function showLogin(){ document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none'; }
 
@@ -183,10 +182,10 @@ function logout(){
   signOut(auth);
 }
 
-// Carrega contatos
+// ---------- CONTATOS ----------
 function loadContacts(){
   const usersRef = ref(db,'users');
-  onValue(usersRef,snapshot=>{
+  get(usersRef).then(snapshot=>{
     const users = snapshot.val();
     const contactsList=document.getElementById('contactsList');
     contactsList.innerHTML='';
@@ -213,7 +212,7 @@ function loadContacts(){
   });
 }
 
-// Chat privado
+// ---------- CHAT PRIVADO ----------
 function openPrivateChatFromDiv(e){
   const div = e.currentTarget;
   const otherUid = div.dataset.uid;
@@ -223,7 +222,7 @@ function openPrivateChatFromDiv(e){
   openChat(chatId, otherName);
 }
 
-// Abrir chat
+// ---------- ABRIR CHAT ----------
 function openChat(chatId,chatName){
   currentChat=chatId;
   document.getElementById('chatHeader').innerText=chatName;
@@ -232,59 +231,58 @@ function openChat(chatId,chatName){
   document.getElementById('chatMessages').innerHTML='';
   document.getElementById('typingIndicator').style.display='none';
 
-  // Listener global para mensagens
+  // Remove listener antigo
   if(messagesListener) messagesListener();
 
   const messagesRef = ref(db,'messages');
-  messagesListener = onValue(messagesRef, snapshot => {
-    const messages = snapshot.val() || {};
-    const chatMessagesDiv = document.getElementById('chatMessages');
-    chatMessagesDiv.innerHTML = '';
-
-    Object.keys(messages).forEach(key => {
-      const msg = messages[key];
-      if(msg.chat === currentChat){
-        const container = document.createElement('div');
-        container.classList.add('message-container', msg.user===auth.currentUser.uid?'sent':'received');
-
-        const sender = document.createElement('div');
-        sender.className = 'sender-name';
-        sender.innerText = msg.username || 'Usuário';
-        if(msg.user===auth.currentUser.uid) sender.style.display='none';
-        container.appendChild(sender);
-
-        const text = document.createElement('div');
-        text.className = 'message';
-        const readCount = msg.readBy ? msg.readBy.length : 0;
-        text.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
-        text.innerText = msg.text;
-        container.appendChild(text);
-
-        const time = new Date(msg.timestamp);
-        const timeDiv = document.createElement('div');
-        timeDiv.className = 'message-time';
-        timeDiv.innerText = `${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
-        container.appendChild(timeDiv);
-
-        chatMessagesDiv.appendChild(container);
-        container.scrollIntoView({behavior:'smooth'});
-
-        if(!msg.readBy) msg.readBy = [];
-        if(!msg.readBy.includes(auth.currentUser.uid)){
-          set(ref(db,'messages/'+key+'/readBy'), [...msg.readBy, auth.currentUser.uid]);
-        }
-
-        // Notificação sonora e pop-up
-        if(msg.user!==auth.currentUser.uid){
-          playNotificationSound();
-          showNotification(`Nova mensagem de ${msg.username}`, msg.text);
-        }
-      }
-    });
+  messagesListener = onChildAdded(messagesRef, snapshot => {
+    const msg = snapshot.val();
+    if(msg.chat === currentChat){
+      appendMessage(msg, snapshot.key);
+    }
   });
 }
 
-// Enviar mensagem
+// ---------- FUNÇÃO PARA RENDERIZAR MENSAGEM ----------
+function appendMessage(msg, key){
+  const chatMessagesDiv = document.getElementById('chatMessages');
+  const container = document.createElement('div');
+  container.classList.add('message-container', msg.user===auth.currentUser.uid?'sent':'received');
+
+  const sender = document.createElement('div');
+  sender.className = 'sender-name';
+  sender.innerText = msg.username || 'Usuário';
+  if(msg.user===auth.currentUser.uid) sender.style.display='none';
+  container.appendChild(sender);
+
+  const text = document.createElement('div');
+  text.className = 'message';
+  const readCount = msg.readBy ? msg.readBy.length : 0;
+  text.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
+  text.innerText = msg.text;
+  container.appendChild(text);
+
+  const time = new Date(msg.timestamp);
+  const timeDiv = document.createElement('div');
+  timeDiv.className = 'message-time';
+  timeDiv.innerText = `${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
+  container.appendChild(timeDiv);
+
+  chatMessagesDiv.appendChild(container);
+  container.scrollIntoView({behavior:'smooth'});
+
+  if(!msg.readBy) msg.readBy = [];
+  if(!msg.readBy.includes(auth.currentUser.uid)){
+    update(ref(db,'messages/'+key+'/readBy'), [...msg.readBy, auth.currentUser.uid]);
+  }
+
+  if(msg.user!==auth.currentUser.uid){
+    playNotificationSound();
+    showNotification(`Nova mensagem de ${msg.username}`, msg.text);
+  }
+}
+
+// ---------- ENVIAR MENSAGEM ----------
 function sendMessage(){
   const input=document.getElementById('messageInput');
   const msg=input.value.trim();
@@ -300,7 +298,7 @@ function sendMessage(){
   input.value='';
 }
 
-// Indicador de digitação
+// ---------- DIGITANDO ----------
 function sendTyping(){
   const typingRef = ref(db,'users/'+auth.currentUser.uid+'/status');
   set(typingRef,'typing');
@@ -310,7 +308,7 @@ function sendTyping(){
 
 function watchTyping(){
   const usersRef=ref(db,'users');
-  onValue(usersRef,snapshot=>{
+  onChildAdded(usersRef,snapshot=>{ // Atualiza status ao adicionar
     const users = snapshot.val()||{};
     document.querySelectorAll('.contact').forEach(div=>{
       const uid = div.dataset.uid;
@@ -322,7 +320,7 @@ function watchTyping(){
   });
 }
 
-// Notificações
+// ---------- NOTIFICAÇÃO ----------
 function playNotificationSound(){ document.getElementById('notificationSound').play(); }
 function showNotification(title,text){
   if(Notification.permission==='granted'){
@@ -330,24 +328,22 @@ function showNotification(title,text){
   }
 }
 
-// Fechar chat
+// ---------- FECHAR / LIMPAR CHAT ----------
 function closeChat(){document.getElementById('chat').style.display='none';document.getElementById('contactsList').style.display='block';}
-
-// Limpar chat
 function clearChat(){
   if(confirm('Apagar TODAS as mensagens deste chat para todos?')){
     const messagesRef=ref(db,'messages');
-    onValue(messagesRef,snap=>{
+    get(messagesRef).then(snap=>{
       snap.forEach(child=>{
-        const msg=child.val();
+        const msg = child.val();
         if(msg.chat===currentChat) remove(ref(db,'messages/'+child.key));
       });
-    },{onlyOnce:true});
+    });
     document.getElementById('chatMessages').innerHTML='';
   }
 }
 
-// Event listeners
+// ---------- EVENTOS ----------
 document.getElementById('showRegisterLink').addEventListener('click', showRegister);
 document.getElementById('showLoginLink').addEventListener('click', showLogin);
 document.getElementById('registerBtn').addEventListener('click', registerUser);
