@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Foundation Kaleosu</title>
 <style>
-/* ---------- ESTILOS ---------- */
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;}
 body{background-color:#121212;display:flex;justify-content:center;align-items:center;height:100vh;color:#E1E1E1;}
 .container{width:100%;max-width:480px;background-color:#1E1E1E;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.7);}
@@ -96,7 +95,7 @@ button:hover{background-color:#056162;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, update, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, set, update, get, remove, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
@@ -119,6 +118,7 @@ let currentUserName = '';
 let currentChat = '';
 let messagesListener;
 let typingTimeout;
+let unreadCounts = {}; // contador de mensagens não lidas
 
 // ---------- AUTENTICAÇÃO ----------
 onAuthStateChanged(auth, async (user) => {
@@ -129,7 +129,6 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
 
-    // Online e onDisconnect
     const userStatusRef = ref(db,'users/'+user.uid+'/status');
     await set(userStatusRef, 'online'); 
     onDisconnect(userStatusRef).set('offline'); 
@@ -154,7 +153,6 @@ async function requestNotificationPermission(){
   } catch(e){ console.error(e);}
 }
 
-// ---------- LOGIN / CADASTRO ----------
 function showRegister(){ document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex'; }
 function showLogin(){ document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none'; }
 
@@ -185,7 +183,7 @@ function logout(){
 // ---------- CONTATOS ----------
 function loadContacts(){
   const usersRef = ref(db,'users');
-  get(usersRef).then(snapshot=>{
+  onValue(usersRef,snapshot=>{
     const users = snapshot.val();
     const contactsList=document.getElementById('contactsList');
     contactsList.innerHTML='';
@@ -212,7 +210,7 @@ function loadContacts(){
   });
 }
 
-// ---------- CHAT PRIVADO ----------
+// ---------- CHAT ----------
 function openPrivateChatFromDiv(e){
   const div = e.currentTarget;
   const otherUid = div.dataset.uid;
@@ -222,7 +220,6 @@ function openPrivateChatFromDiv(e){
   openChat(chatId, otherName);
 }
 
-// ---------- ABRIR CHAT ----------
 function openChat(chatId,chatName){
   currentChat=chatId;
   document.getElementById('chatHeader').innerText=chatName;
@@ -231,7 +228,6 @@ function openChat(chatId,chatName){
   document.getElementById('chatMessages').innerHTML='';
   document.getElementById('typingIndicator').style.display='none';
 
-  // Remove listener antigo
   if(messagesListener) messagesListener();
 
   const messagesRef = ref(db,'messages');
@@ -239,11 +235,14 @@ function openChat(chatId,chatName){
     const msg = snapshot.val();
     if(msg.chat === currentChat){
       appendMessage(msg, snapshot.key);
+    } else {
+      updateUnreadCount(msg);
     }
   });
+
+  resetUnreadCount(currentChat);
 }
 
-// ---------- FUNÇÃO PARA RENDERIZAR MENSAGEM ----------
 function appendMessage(msg, key){
   const chatMessagesDiv = document.getElementById('chatMessages');
   const container = document.createElement('div');
@@ -258,7 +257,7 @@ function appendMessage(msg, key){
   const text = document.createElement('div');
   text.className = 'message';
   const readCount = msg.readBy ? msg.readBy.length : 0;
-  text.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
+  text.setAttribute('data-read', msg.user===auth.currentUser.uid ? (readCount>1?'✓✓':'✓') : '');
   text.innerText = msg.text;
   container.appendChild(text);
 
@@ -282,7 +281,40 @@ function appendMessage(msg, key){
   }
 }
 
-// ---------- ENVIAR MENSAGEM ----------
+// ---------- CONTADOR DE NÃO LIDAS ----------
+function updateUnreadCount(msg){
+  if(msg.chat === 'Public Chat') {
+    unreadCounts['public'] = (unreadCounts['public'] || 0) + 1;
+    const el = document.getElementById('unread-public');
+    el.style.display='block';
+    el.innerText = unreadCounts['public'];
+  } else {
+    const [uid1, uid2] = msg.chat.split('_');
+    const otherUid = uid1 === auth.currentUser.uid ? uid2 : uid1;
+    unreadCounts[otherUid] = (unreadCounts[otherUid] || 0) + 1;
+    const el = document.getElementById(`unread-${otherUid}`);
+    if(el){
+      el.style.display='block';
+      el.innerText = unreadCounts[otherUid];
+    }
+  }
+}
+
+function resetUnreadCount(chatId){
+  if(chatId==='Public Chat'){
+    unreadCounts['public'] = 0;
+    const el = document.getElementById('unread-public');
+    if(el){ el.style.display='none'; el.innerText=''; }
+  } else {
+    const [uid1, uid2] = chatId.split('_');
+    const otherUid = uid1 === auth.currentUser.uid ? uid2 : uid1;
+    unreadCounts[otherUid] = 0;
+    const el = document.getElementById(`unread-${otherUid}`);
+    if(el){ el.style.display='none'; el.innerText=''; }
+  }
+}
+
+// ---------- ENVIO MENSAGEM ----------
 function sendMessage(){
   const input=document.getElementById('messageInput');
   const msg=input.value.trim();
@@ -298,7 +330,7 @@ function sendMessage(){
   input.value='';
 }
 
-// ---------- DIGITANDO ----------
+// ---------- DIGITAÇÃO ----------
 function sendTyping(){
   const typingRef = ref(db,'users/'+auth.currentUser.uid+'/status');
   set(typingRef,'typing');
@@ -308,7 +340,7 @@ function sendTyping(){
 
 function watchTyping(){
   const usersRef=ref(db,'users');
-  onChildAdded(usersRef,snapshot=>{ // Atualiza status ao adicionar
+  onValue(usersRef,snapshot=>{
     const users = snapshot.val()||{};
     document.querySelectorAll('.contact').forEach(div=>{
       const uid = div.dataset.uid;
@@ -320,7 +352,7 @@ function watchTyping(){
   });
 }
 
-// ---------- NOTIFICAÇÃO ----------
+// ---------- NOTIFICAÇÕES ----------
 function playNotificationSound(){ document.getElementById('notificationSound').play(); }
 function showNotification(title,text){
   if(Notification.permission==='granted'){
@@ -328,17 +360,18 @@ function showNotification(title,text){
   }
 }
 
-// ---------- FECHAR / LIMPAR CHAT ----------
+// ---------- CONTROLES CHAT ----------
 function closeChat(){document.getElementById('chat').style.display='none';document.getElementById('contactsList').style.display='block';}
+
 function clearChat(){
   if(confirm('Apagar TODAS as mensagens deste chat para todos?')){
     const messagesRef=ref(db,'messages');
-    get(messagesRef).then(snap=>{
+    onValue(messagesRef,snap=>{
       snap.forEach(child=>{
-        const msg = child.val();
+        const msg=child.val();
         if(msg.chat===currentChat) remove(ref(db,'messages/'+child.key));
       });
-    });
+    },{onlyOnce:true});
     document.getElementById('chatMessages').innerHTML='';
   }
 }
