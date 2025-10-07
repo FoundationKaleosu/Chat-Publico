@@ -21,6 +21,7 @@ button:hover{background-color:#056162;}
 .contact .avatar{width:50px;height:50px;border-radius:50%;background-color:#075E54;color:#E1E1E1;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:20px;margin-right:10px;position:relative;}
 .contact .status-dot{position:absolute;bottom:4px;right:4px;width:12px;height:12px;border-radius:50%;border:2px solid #1E1E1E;}
 .contact .name{font-weight:bold;font-size:16px;color:#E1E1E1;}
+.contact .unread-count{position:absolute;top:5px;right:5px;background:red;color:#fff;font-size:12px;padding:2px 5px;border-radius:50%;display:none;}
 .chat{display:none;flex-direction:column;background-color:#121212;}
 .chat-messages{flex:1;padding:10px;overflow-y:auto;display:flex;flex-direction:column;scroll-behavior:smooth;}
 .message-container{margin-bottom:12px;display:flex;flex-direction:column;max-width:75%;word-wrap:break-word;white-space:pre-wrap;}
@@ -90,6 +91,8 @@ button:hover{background-color:#056162;}
   </div>
 </div>
 
+<audio id="notificationSound" src="notification.mp3" preload="auto"></audio>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getDatabase, ref, push, onChildAdded, onValue, set, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
@@ -115,6 +118,7 @@ let currentUserName = '';
 let currentChat = '';
 let messagesListener;
 let typingTimeout;
+let unreadCounts = {}; // contador de mensagens não lidas
 
 // Mantém usuário logado
 onAuthStateChanged(auth, async (user) => {
@@ -125,10 +129,10 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
 
-    // Atualiza online e adiciona onDisconnect
-    const userStatusRef = ref(db,'users/'+user.uid+'/online');
-    await set(userStatusRef, true);
-    onDisconnect(userStatusRef).set(false);
+    // Online e onDisconnect
+    const userStatusRef = ref(db,'users/'+user.uid+'/status');
+    await set(userStatusRef, 'online'); // online = verde
+    onDisconnect(userStatusRef).set('offline'); // offline = vermelho
 
     await requestNotificationPermission();
     loadContacts();
@@ -162,7 +166,7 @@ async function registerUser(){
   if(!name||!email||!password){alert("Preencha todos os campos!");return;}
   try{
     const userCredential = await createUserWithEmailAndPassword(auth,email,password);
-    await set(ref(db,'users/'+userCredential.user.uid),{name,email,online:false});
+    await set(ref(db,'users/'+userCredential.user.uid),{name,email,status:'offline'});
     alert(`Usuário ${name} cadastrado!`);
     showLogin();
   }catch(e){alert(e.message);}
@@ -175,11 +179,11 @@ async function loginUser(){
 }
 
 function logout(){
-  update(ref(db,'users/'+auth.currentUser.uid),{online:false});
+  update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'});
   signOut(auth);
 }
 
-// Contatos
+// Carrega contatos
 function loadContacts(){
   const usersRef = ref(db,'users');
   onValue(usersRef,snapshot=>{
@@ -190,7 +194,7 @@ function loadContacts(){
     // Chat público
     const pubDiv=document.createElement('div');
     pubDiv.className='contact';
-    pubDiv.innerHTML=`<div class="avatar">C</div><div class="name">Chat Público</div>`;
+    pubDiv.innerHTML=`<div class="avatar">C<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
     pubDiv.addEventListener('click',()=>openChat('Public Chat','Chat Público'));
     contactsList.appendChild(pubDiv);
 
@@ -201,7 +205,8 @@ function loadContacts(){
       div.className='contact';
       div.dataset.uid = uid;
       div.dataset.name = u.name;
-      div.innerHTML=`<div class="avatar">${u.name.charAt(0).toUpperCase()}<div class="status-dot" style="background-color:${u.online?'#00FF00':'#FF0000'}"></div></div><div class="name">${u.name}</div>`;
+      const color = u.status==='online'?'green':u.status==='typing'?'yellow':'red';
+      div.innerHTML=`<div class="avatar">${u.name.charAt(0).toUpperCase()}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${u.name}</div><div class="unread-count" id="unread-${uid}"></div>`;
       div.addEventListener('click', openPrivateChatFromDiv);
       contactsList.appendChild(div);
     });
@@ -227,44 +232,55 @@ function openChat(chatId,chatName){
   document.getElementById('chatMessages').innerHTML='';
   document.getElementById('typingIndicator').style.display='none';
 
+  // Listener global para mensagens
   if(messagesListener) messagesListener();
 
   const messagesRef = ref(db,'messages');
-  messagesListener = onChildAdded(messagesRef,(snapshot)=>{
-    const msg=snapshot.val();
-    if(msg.chat===currentChat){
-      const container=document.createElement('div');
-      container.classList.add('message-container', msg.user===auth.currentUser.uid?'sent':'received');
+  messagesListener = onValue(messagesRef, snapshot => {
+    const messages = snapshot.val() || {};
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    chatMessagesDiv.innerHTML = '';
 
-      const sender=document.createElement('div');
-      sender.className='sender-name';
-      sender.innerText=msg.username||'Usuário';
-      if(msg.user===auth.currentUser.uid) sender.style.display='none';
-      container.appendChild(sender);
+    Object.keys(messages).forEach(key => {
+      const msg = messages[key];
+      if(msg.chat === currentChat){
+        const container = document.createElement('div');
+        container.classList.add('message-container', msg.user===auth.currentUser.uid?'sent':'received');
 
-      const text=document.createElement('div');
-      text.className='message';
-      const readCount = msg.readBy?msg.readBy.length:0;
-      text.setAttribute('data-read',readCount>1?'✓✓':'✓');
-      text.innerText=msg.text;
-      container.appendChild(text);
+        const sender = document.createElement('div');
+        sender.className = 'sender-name';
+        sender.innerText = msg.username || 'Usuário';
+        if(msg.user===auth.currentUser.uid) sender.style.display='none';
+        container.appendChild(sender);
 
-      const time=new Date(msg.timestamp);
-      const timeDiv=document.createElement('div');
-      timeDiv.className='message-time';
-      timeDiv.innerText=`${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
-      container.appendChild(timeDiv);
+        const text = document.createElement('div');
+        text.className = 'message';
+        const readCount = msg.readBy ? msg.readBy.length : 0;
+        text.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
+        text.innerText = msg.text;
+        container.appendChild(text);
 
-      document.getElementById('chatMessages').appendChild(container);
-      container.scrollIntoView({behavior:'smooth'});
+        const time = new Date(msg.timestamp);
+        const timeDiv = document.createElement('div');
+        timeDiv.className = 'message-time';
+        timeDiv.innerText = `${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
+        container.appendChild(timeDiv);
 
-      if(!msg.readBy) msg.readBy=[];
-      if(!msg.readBy.includes(auth.currentUser.uid)){
-        set(ref(db,'messages/'+snapshot.key+'/readBy'), [...msg.readBy, auth.currentUser.uid]);
+        chatMessagesDiv.appendChild(container);
+        container.scrollIntoView({behavior:'smooth'});
+
+        if(!msg.readBy) msg.readBy = [];
+        if(!msg.readBy.includes(auth.currentUser.uid)){
+          set(ref(db,'messages/'+key+'/readBy'), [...msg.readBy, auth.currentUser.uid]);
+        }
+
+        // Notificação sonora e pop-up
+        if(msg.user!==auth.currentUser.uid){
+          playNotificationSound();
+          showNotification(`Nova mensagem de ${msg.username}`, msg.text);
+        }
       }
-
-      if(msg.user!==auth.currentUser.uid) new Notification(`Nova mensagem de ${msg.username||'Usuário'}`, {body: msg.text});
-    }
+    });
   });
 }
 
@@ -286,19 +302,32 @@ function sendMessage(){
 
 // Indicador de digitação
 function sendTyping(){
-  const typingRef = ref(db,'typing/'+currentChat+'/'+auth.currentUser.uid);
-  set(typingRef,true);
+  const typingRef = ref(db,'users/'+auth.currentUser.uid+'/status');
+  set(typingRef,'typing');
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>set(typingRef,false),1000);
+  typingTimeout=setTimeout(()=>set(typingRef,'online'),1000);
 }
 
 function watchTyping(){
-  const typingRef=ref(db,'typing');
-  onValue(typingRef,snapshot=>{
-    const typingUsers = snapshot.val()||{};
-    const othersTyping=Object.keys(typingUsers[currentChat]||{}).filter(uid=>uid!==auth.currentUser.uid && typingUsers[currentChat][uid]);
-    document.getElementById('typingIndicator').style.display=othersTyping.length?'block':'none';
+  const usersRef=ref(db,'users');
+  onValue(usersRef,snapshot=>{
+    const users = snapshot.val()||{};
+    document.querySelectorAll('.contact').forEach(div=>{
+      const uid = div.dataset.uid;
+      if(uid && users[uid]){
+        let color = users[uid].status==='online'?'green':users[uid].status==='typing'?'yellow':'red';
+        div.querySelector('.status-dot').style.backgroundColor=color;
+      }
+    });
   });
+}
+
+// Notificações
+function playNotificationSound(){ document.getElementById('notificationSound').play(); }
+function showNotification(title,text){
+  if(Notification.permission==='granted'){
+    new Notification(title,{body:text});
+  }
 }
 
 // Fechar chat
@@ -328,15 +357,15 @@ document.getElementById('closeChatBtn').addEventListener('click', closeChat);
 document.getElementById('sendMsgBtn').addEventListener('click', sendMessage);
 document.getElementById('clearChatBtn').addEventListener('click', clearChat);
 
-// Shift+Enter quebra de linha, Enter envia
 const messageInput = document.getElementById('messageInput');
 messageInput.addEventListener('keydown', function(e){
   if(e.key==='Enter' && !e.shiftKey){
     e.preventDefault();
     sendMessage();
+  } else {
+    sendTyping();
   }
 });
-
 </script>
 </body>
 </html>
