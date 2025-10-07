@@ -29,8 +29,8 @@ button:hover{background-color:#056162;}
 .message-container.sent{align-self:flex-end;}
 .message-container.received{align-self:flex-start;}
 .message-container .sender-name{font-size:12px;font-weight:bold;color:#075E54;margin-bottom:2px;}
-.message-container .message{font-size:14px;padding:10px 14px;border-radius:12px;display:inline-block;max-width:100%;}
-.message-container.sent .message{background-color:#056162;color:#E1E1E1;border-bottom-right-radius:2px;padding-right:30px;position:relative;}
+.message-container .message{font-size:14px;padding:10px 14px;border-radius:12px;display:inline-block;max-width:100%;position:relative;}
+.message-container.sent .message{background-color:#056162;color:#E1E1E1;border-bottom-right-radius:2px;padding-right:30px;}
 .message-container.sent .message::after{content:attr(data-read);font-size:10px;color:#E1E1E1;position:absolute;bottom:4px;right:8px;}
 .message-container.received .message{background-color:#262D31;color:#E1E1E1;}
 .message-container .message-time{font-size:10px;color:#888;text-align:right;margin-top:2px;}
@@ -96,7 +96,7 @@ button:hover{background-color:#056162;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, update, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onChildChanged, set, update, get, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
@@ -117,7 +117,7 @@ const messaging = getMessaging(app);
 
 let currentUserName = '';
 let currentChat = '';
-let messagesListener;
+let messagesListenerAdded = false;
 let typingTimeout;
 
 // ---------- AUTENTICAÇÃO ----------
@@ -129,7 +129,6 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
 
-    // Online e onDisconnect
     const userStatusRef = ref(db,'users/'+user.uid+'/status');
     await set(userStatusRef, 'online'); 
     onDisconnect(userStatusRef).set('offline'); 
@@ -190,7 +189,6 @@ function loadContacts(){
     const contactsList=document.getElementById('contactsList');
     contactsList.innerHTML='';
 
-    // Chat público
     const pubDiv=document.createElement('div');
     pubDiv.className='contact';
     pubDiv.innerHTML=`<div class="avatar">C<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
@@ -231,14 +229,22 @@ function openChat(chatId,chatName){
   document.getElementById('chatMessages').innerHTML='';
   document.getElementById('typingIndicator').style.display='none';
 
-  // Remove listener antigo
-  if(messagesListener) messagesListener();
-
   const messagesRef = ref(db,'messages');
-  messagesListener = onChildAdded(messagesRef, snapshot => {
+
+  if(messagesListenerAdded) return;
+  messagesListenerAdded = true;
+
+  onChildAdded(messagesRef, snapshot => {
     const msg = snapshot.val();
     if(msg.chat === currentChat){
       appendMessage(msg, snapshot.key);
+    }
+  });
+
+  onChildChanged(messagesRef, snapshot => {
+    const msg = snapshot.val();
+    if(msg.chat === currentChat){
+        updateMessageReadStatus(snapshot.key, msg);
     }
   });
 }
@@ -282,6 +288,22 @@ function appendMessage(msg, key){
   }
 }
 
+// ---------- ATUALIZAR LEITURA ----------
+function updateMessageReadStatus(key, msg){
+  const chatMessagesDiv = document.getElementById('chatMessages');
+  const containers = chatMessagesDiv.querySelectorAll('.message-container.sent');
+
+  containers.forEach(container => {
+    const textDiv = container.querySelector('.message');
+    const timeDiv = container.querySelector('.message-time');
+
+    if(textDiv.innerText === msg.text && timeDiv.innerText === new Date(msg.timestamp).getHours().toString().padStart(2,'0') + ':' + new Date(msg.timestamp).getMinutes().toString().padStart(2,'0')){
+      const readCount = msg.readBy ? msg.readBy.length : 0;
+      textDiv.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
+    }
+  });
+}
+
 // ---------- ENVIAR MENSAGEM ----------
 function sendMessage(){
   const input=document.getElementById('messageInput');
@@ -308,7 +330,7 @@ function sendTyping(){
 
 function watchTyping(){
   const usersRef=ref(db,'users');
-  onChildAdded(usersRef,snapshot=>{ // Atualiza status ao adicionar
+  onChildAdded(usersRef,snapshot=>{
     const users = snapshot.val()||{};
     document.querySelectorAll('.contact').forEach(div=>{
       const uid = div.dataset.uid;
