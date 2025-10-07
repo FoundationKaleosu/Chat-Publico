@@ -298,40 +298,55 @@ function sendMessage(){
 }
 
 // ---------- DIGITANDO ----------
-function sendTyping(){
-  const typingRef = ref(db,'users/'+auth.currentUser.uid+'/status');
-  set(typingRef,'typing');
+function sendTyping() {
+  if (!auth.currentUser) return;
+
+  const statusRef = ref(db, 'users/' + auth.currentUser.uid + '/status');
+  set(statusRef, 'typing');
+
   clearTimeout(typingTimeout);
-  typingTimeout=setTimeout(()=>set(typingRef,'online'),1000);
+  typingTimeout = setTimeout(() => set(statusRef, 'online'), 1000);
 }
 
-function watchTyping(){
-  const usersRef=ref(db,'users');
+function watchTyping() {
+  const usersRef = ref(db, 'users');
 
   // Atualiza status em tempo real
   onChildChanged(usersRef, snapshot => {
     const user = snapshot.val();
     const uid = snapshot.key;
-    const div = document.querySelector(`.contact[data-uid="${uid}"]`);
-    if(div){
+
+    // Atualiza bolinha na lista de contatos
+    const contactDiv = document.querySelector(`.contact[data-uid="${uid}"]`);
+    if (contactDiv) {
       let color = 'red';
-      if(user.status==='online') color='green';
-      else if(user.status==='typing') color='yellow';
-      div.querySelector('.status-dot').style.backgroundColor=color;
+      if (user.status === 'online') color = 'green';
+      else if (user.status === 'typing') color = 'yellow';
+      contactDiv.querySelector('.status-dot').style.backgroundColor = color;
+    }
+
+    // Atualiza indicador no chat privado
+    if (currentChat.includes(uid) && uid !== auth.currentUser.uid) {
+      const typingDiv = document.getElementById('typingIndicator');
+      if (user.status === 'typing') {
+        typingDiv.style.display = 'block';
+      } else {
+        typingDiv.style.display = 'none';
+      }
     }
   });
 
-  // Atualiza todos na primeira carga
-  get(usersRef).then(snapshot=>{
-    snapshot.forEach(child=>{
+  // Atualiza todos os contatos e status na primeira carga
+  get(usersRef).then(snapshot => {
+    snapshot.forEach(child => {
       const user = child.val();
       const uid = child.key;
       const div = document.querySelector(`.contact[data-uid="${uid}"]`);
-      if(div){
+      if (div) {
         let color = 'red';
-        if(user.status==='online') color='green';
-        else if(user.status==='typing') color='yellow';
-        div.querySelector('.status-dot').style.backgroundColor=color;
+        if (user.status === 'online') color = 'green';
+        else if (user.status === 'typing') color = 'yellow';
+        div.querySelector('.status-dot').style.backgroundColor = color;
       }
     });
   });
