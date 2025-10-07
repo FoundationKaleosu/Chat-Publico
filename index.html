@@ -92,7 +92,7 @@ button:hover{background-color:#056162;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onValue, set, update, remove, get } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onValue, set, update, remove, get, onDisconnect } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
@@ -124,7 +124,12 @@ onAuthStateChanged(auth, async (user) => {
     document.getElementById('loginForm').style.display='none';
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
-    update(ref(db,'users/'+user.uid), {online:true});
+
+    // Atualiza online e adiciona onDisconnect
+    const userStatusRef = ref(db,'users/'+user.uid+'/online');
+    await set(userStatusRef, true);
+    onDisconnect(userStatusRef).set(false);
+
     await requestNotificationPermission();
     loadContacts();
     watchTyping();
@@ -203,7 +208,7 @@ function loadContacts(){
   });
 }
 
-// Chat privado (corrigido para mobile)
+// Chat privado
 function openPrivateChatFromDiv(e){
   const div = e.currentTarget;
   const otherUid = div.dataset.uid;
