@@ -1,52 +1,49 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Foundation Kaleosu</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Foundation Kaleosu — Chat com Dropdown</title>
 <style>
-/* ---------- ESTILOS ---------- */
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;}
 body{background-color:#121212;display:flex;justify-content:center;align-items:center;height:100vh;color:#E1E1E1;}
 .container{width:100%;max-width:480px;background-color:#1E1E1E;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.7);}
-.form-container{padding:20px;display:flex;flex-direction:column;gap:15px;}
-input, textarea{padding:10px;border-radius:5px;border:1px solid #333;outline:none;width:100%;font-size:14px;background-color:#2C2C2C;color:#E1E1E1;white-space:pre-wrap;}
-button{padding:10px;border:none;border-radius:5px;background-color:#075E54;color:#E1E1E1;font-weight:bold;cursor:pointer;transition:0.2s;}
+.form-container{padding:20px;display:flex;flex-direction:column;gap:12px;}
+input, textarea, select{padding:10px;border-radius:6px;border:1px solid #333;outline:none;width:100%;font-size:14px;background-color:#2C2C2C;color:#E1E1E1;}
+button{padding:10px;border:none;border-radius:6px;background-color:#075E54;color:#E1E1E1;font-weight:bold;cursor:pointer;transition:0.18s;}
 button:hover{background-color:#056162;}
 .link{color:#075E54;text-align:center;cursor:pointer;font-size:14px;}
 .whatsapp-container{display:none;flex-direction:column;height:100vh;}
-.header{height:60px;background-color:#1E1E1E;color:#E1E1E1;display:flex;align-items:center;padding:0 15px;font-weight:bold;font-size:18px;justify-content:space-between;box-shadow:0 2px 4px rgba(0,0,0,0.5);}
+.header{height:60px;background-color:#1E1E1E;color:#E1E1E1;display:flex;align-items:center;padding:0 12px;font-weight:bold;font-size:18px;justify-content:space-between;box-shadow:0 2px 4px rgba(0,0,0,0.5);}
 .contacts,.chat{flex:1;overflow-y:auto;background-color:#121212;-webkit-overflow-scrolling:touch;}
-.contact{display:flex;align-items:center;padding:12px;border-bottom:1px solid #333;cursor:pointer;transition:0.2s;position:relative;}
+.contact{display:flex;align-items:center;padding:12px;border-bottom:1px solid #333;cursor:pointer;transition:0.18s;position:relative;}
 .contact:hover{background-color:#2C2C2C;}
-.contact .avatar{width:50px;height:50px;border-radius:50%;background-color:#075E54;color:#E1E1E1;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:20px;margin-right:10px;position:relative;}
-.contact .status-dot{position:absolute;bottom:4px;right:4px;width:12px;height:12px;border-radius:50%;border:2px solid #1E1E1E;}
-.contact .name{font-weight:bold;font-size:16px;color:#E1E1E1;}
-.contact .unread-count{position:absolute;top:5px;right:5px;background:red;color:#fff;font-size:12px;padding:2px 5px;border-radius:50%;display:none;}
+.avatar{width:46px;height:46px;border-radius:50%;background-color:#075E54;color:#E1E1E1;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:18px;margin-right:10px;position:relative;}
+.status-dot{position:absolute;bottom:3px;right:3px;width:12px;height:12px;border-radius:50%;border:2px solid #1E1E1E;}
+.name{font-weight:bold;font-size:15px;color:#E1E1E1;}
+.unread-count{position:absolute;top:8px;right:10px;background:red;color:#fff;font-size:12px;padding:2px 6px;border-radius:12px;display:none;}
 .chat{display:none;flex-direction:column;background-color:#121212;}
 .chat-messages{flex:1;padding:10px;overflow-y:auto;display:flex;flex-direction:column;scroll-behavior:smooth;}
 .message-container{margin-bottom:12px;display:flex;flex-direction:column;max-width:75%;word-wrap:break-word;white-space:pre-wrap;}
 .message-container.sent{align-self:flex-end;}
 .message-container.received{align-self:flex-start;}
-.message-container .sender-name{font-size:12px;font-weight:bold;color:#075E54;margin-bottom:2px;}
-.message-container .message{font-size:14px;padding:10px 14px;border-radius:12px;display:inline-block;max-width:100%;white-space:pre-wrap;}
-.message-container.sent .message{background-color:#056162;color:#E1E1E1;border-bottom-right-radius:2px;padding-right:30px;position:relative;}
-.message-container.sent .message::after{content:attr(data-read);font-size:10px;color:#E1E1E1;position:absolute;bottom:4px;right:8px;}
-.message-container.received .message{background-color:#262D31;color:#E1E1E1;}
-.message-container .message-time{font-size:10px;color:#888;text-align:right;margin-top:2px;}
+.sender-name{font-size:12px;font-weight:bold;color:#075E54;margin-bottom:6px;}
+.message{font-size:14px;padding:10px 14px;border-radius:12px;display:inline-block;max-width:100%;white-space:pre-wrap;}
+.message.sent{background-color:#056162;color:#E1E1E1;}
+.message.received{background-color:#262D31;color:#E1E1E1;}
+.message-time{font-size:10px;color:#888;text-align:right;margin-top:4px;}
 .chat-input{display:flex;padding:10px;background-color:#2C2C2C;border-top:1px solid #333;}
-.chat-input textarea{flex:1;padding:10px;border-radius:25px;border:1px solid #333;outline:none;font-size:14px;background-color:#1E1E1E;color:#E1E1E1;resize:none;height:40px;}
-.chat-input button{background-color:#075E54;color:#E1E1E1;border:none;padding:10px 15px;margin-left:5px;border-radius:50%;cursor:pointer;transition:0.2s;}
-.chat-input button:hover{background-color:#056162;}
-.clear-chat{margin-left:10px;background-color:#B00020;border-radius:5px;padding:8px 12px;font-size:14px;color:#E1E1E1;}
-.clear-chat:hover{background-color:#900018;}
-.typing{font-size:12px;color:#E1E1E1;margin-bottom:5px;font-style:italic;}
+.chat-input textarea{flex:1;padding:10px;border-radius:25px;border:1px solid #333;outline:none;font-size:14px;background-color:#1E1E1E;color:#E1E1E1;resize:none;height:44px;}
+.chat-input button{background-color:#075E54;color:#E1E1E1;border:none;padding:10px 14px;margin-left:8px;border-radius:8px;cursor:pointer;}
+.typing-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;background:yellow;margin-left:6px;animation:blink 1s infinite;}
+@keyframes blink{0%,50%,100%{opacity:0;}25%,75%{opacity:1;}}
+.small-note{font-size:12px;color:#bbb;text-align:center;padding:8px;}
 </style>
 </head>
 <body>
 <div class="container">
 
-  <!-- Login -->
+  <!-- LOGIN -->
   <div id="loginForm" class="form-container">
     <h2>Login</h2>
     <input type="email" id="loginEmail" placeholder="Email">
@@ -55,34 +52,38 @@ button:hover{background-color:#056162;}
     <div class="link" id="showRegisterLink">Criar conta</div>
   </div>
 
-  <!-- Cadastro -->
+  <!-- REGISTRO -->
   <div id="registerForm" class="form-container" style="display:none;">
     <h2>Cadastro</h2>
     <input type="text" id="regName" placeholder="Nome de usuário">
     <input type="email" id="regEmail" placeholder="Email">
     <input type="password" id="regPassword" placeholder="Senha">
+    <input type="text" id="regGroup" placeholder="Função (ex: Professor, Aluno, Zero Absoluto)">
     <button id="registerBtn">Cadastrar</button>
     <div class="link" id="showLoginLink">Já tem conta? Entrar</div>
+    <div class="small-note">Ao cadastrar com uma "Função" nova, a aba correspondente será criada automaticamente.</div>
   </div>
 
-  <!-- Chat -->
+  <!-- CHAT -->
   <div class="whatsapp-container" id="whatsappApp">
     <div class="header">
       <span>Foundation Kaleosu</span>
       <div>
-        <button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:16px; border:none; cursor:pointer;">Sair</button>
+        <button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
         <button class="clear-chat" id="clearChatBtn">Apagar Chat</button>
       </div>
     </div>
 
-    <div class="contacts" id="contactsList"></div>
+    <div class="contacts">
+      <select id="groupSelect"></select>
+      <div id="contactsListContent"></div>
+    </div>
 
     <div class="chat" id="chat">
       <div class="header">
         <span id="chatHeader">Chat Público</span>
         <button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
       </div>
-      <div class="typing" id="typingIndicator" style="display:none;">Digitando...</div>
       <div class="chat-messages" id="chatMessages"></div>
       <div class="chat-input">
         <textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
@@ -92,13 +93,10 @@ button:hover{background-color:#056162;}
   </div>
 </div>
 
-<audio id="notificationSound" src="notification.mp3" preload="auto"></audio>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, set, update, get, onDisconnect, onChildChanged, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, set, get, update, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBMr3KcqWq358YvERVBkSqzDsqHnqsBqCw",
@@ -112,290 +110,246 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const auth = getAuth();
-const messaging = getMessaging(app);
+const auth = getAuth(app);
 
 let currentUserName = '';
-let currentChat = '';
-let messagesListener;
-let typingTimeout;
+let currentChat = 'Chat Público';
+let messagesListenerUnsub = null;
+const userDomMap = {};
+let groupsMap = new Map();
+let typingTimeout = null;
 
-// ---------- AUTENTICAÇÃO ----------
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const snapshot = await get(ref(db,'users/'+user.uid));
-    currentUserName = snapshot.exists() ? snapshot.val().name || 'Usuário' : 'Usuário';
+/* ---------- AUTENTICAÇÃO ---------- */
+onAuthStateChanged(auth, async user => {
+  if(user){
+    const snap = await get(ref(db,'users/'+user.uid));
+    currentUserName = snap.exists()? snap.val().name || 'Usuário':'Usuário';
     document.getElementById('loginForm').style.display='none';
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
 
-    // Online e onDisconnect
     const userStatusRef = ref(db,'users/'+user.uid+'/status');
-    await set(userStatusRef, 'online'); 
-    onDisconnect(userStatusRef).set('offline'); 
+    await set(userStatusRef,'online');
+    onDisconnect(userStatusRef).set('offline');
 
-    await requestNotificationPermission();
-    loadContacts();
-    watchTyping();
-    openChat('Public Chat','Chat Público');
+    await setupContactsRealtime();
+    showTab('Chat Público');
+    openChat('Chat Público','Chat Público');
   } else {
     document.getElementById('whatsappApp').style.display='none';
-    showLogin();
+    document.getElementById('loginForm').style.display='flex';
   }
 });
 
-async function requestNotificationPermission(){
-  try{
-    const permission = await Notification.requestPermission();
-    if(permission==='granted'){
-      const token = await getToken(messaging, {vapidKey:"BG-HAG8bZewCqHW19SNiRtBnX_3dlmno6uuHRbhwT_Iqjj5PwpfvRNIvPvmB0iQ4PAn9ppeAT0tg5D3ZlRw7mnY"});
-      await set(ref(db,'users/'+auth.currentUser.uid+'/notificationToken'), token);
-    }
-  } catch(e){ console.error(e);}
-}
-
-// ---------- LOGIN / CADASTRO ----------
-function showRegister(){ document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex'; }
-function showLogin(){ document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none'; }
+/* ---------- LOGIN / CADASTRO ---------- */
+function showRegister(){document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex';}
+function showLogin(){document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none';}
 
 async function registerUser(){
   const name=document.getElementById('regName').value.trim();
   const email=document.getElementById('regEmail').value.trim();
   const password=document.getElementById('regPassword').value;
-  if(!name||!email||!password){alert("Preencha todos os campos!");return;}
-  try{
-    const userCredential = await createUserWithEmailAndPassword(auth,email,password);
-    await set(ref(db,'users/'+userCredential.user.uid),{name,email,status:'offline'});
-    alert(`Usuário ${name} cadastrado!`);
+  const userGroup=document.getElementById('regGroup').value.trim() || 'Outro';
+  if(!name || !email || !password){ alert('Preencha todos os campos!'); return; }
+  try {
+    const cred = await createUserWithEmailAndPassword(auth,email,password);
+    await set(ref(db,'users/'+cred.user.uid),{ name,email,userGroup,status:'offline',createdAt:Date.now() });
+    alert(`Usuário "${name}" criado na função "${userGroup}". Faça login.`);
     showLogin();
-  }catch(e){alert(e.message);}
+  } catch(err){alert(err.message || String(err));}
 }
 
 async function loginUser(){
   const email=document.getElementById('loginEmail').value.trim();
   const password=document.getElementById('loginPassword').value;
-  try{ await signInWithEmailAndPassword(auth,email,password); } catch(e){alert(e.message);}
+  try{await signInWithEmailAndPassword(auth,email,password);} catch(err){alert(err.message||String(err));}
 }
 
 function logout(){
-  update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'});
-  signOut(auth);
+  if(!auth.currentUser) return;
+  update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
 }
 
-// ---------- CONTATOS ----------
-function loadContacts(){
-  const usersRef = ref(db,'users');
-  get(usersRef).then(snapshot=>{
-    const users = snapshot.val();
-    const contactsList=document.getElementById('contactsList');
-    contactsList.innerHTML='';
+/* ---------- CONTATOS E GRUPOS (REVISADO) ---------- */
+async function setupContactsRealtime() {
+  const contactsList = document.getElementById('contactsListContent');
+  contactsList.innerHTML = '';
+  groupsMap = new Map();
 
-    // Chat público
-    const pubDiv=document.createElement('div');
-    pubDiv.className='contact';
-    pubDiv.innerHTML=`<div class="avatar">C<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
-    pubDiv.addEventListener('click',()=>openChat('Public Chat','Chat Público'));
-    contactsList.appendChild(pubDiv);
+  function createGroupIfNeeded(groupName) {
+    if (groupsMap.has(groupName)) return groupsMap.get(groupName);
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'tab-content';
+    contactsList.appendChild(contentDiv);
+    const obj = { contentDiv };
+    groupsMap.set(groupName, obj);
+    updateGroupSelect();
+    return obj;
+  }
 
-    const currentUserId=auth.currentUser.uid;
-    Object.keys(users).filter(uid=>uid!==currentUserId).sort((a,b)=>users[a].name.localeCompare(users[b].name)).forEach(uid=>{
-      const u=users[uid];
-      const div=document.createElement('div');
-      div.className='contact';
-      div.dataset.uid = uid;
-      div.dataset.name = u.name;
-      const color = u.status==='online'?'green':u.status==='typing'?'yellow':'red';
-      div.innerHTML=`<div class="avatar">${u.name.charAt(0).toUpperCase()}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${u.name}</div><div class="unread-count" id="unread-${uid}"></div>`;
-      div.addEventListener('click', openPrivateChatFromDiv);
-      contactsList.appendChild(div);
+  createGroupIfNeeded('Chat Público');
+
+  function createPublicChatContact() {
+    const groupDom = groupsMap.get('Chat Público');
+    if (!groupDom) return;
+    const div = document.createElement('div');
+    div.className = 'contact';
+    div.dataset.uid = 'public';
+    div.dataset.name = 'Chat Público';
+    div.innerHTML = `
+      <div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div>
+      <div class="name">Chat Público</div>
+      <div class="unread-count" id="unread-public"></div>
+    `;
+    div.addEventListener('click', () => {
+      openChat('Chat Público', 'Chat Público');
+      resetUnread('Chat Público');
     });
+    groupDom.contentDiv.appendChild(div);
+  }
+  createPublicChatContact();
+
+  function createUserElement(uid,userObj){
+    const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.name=userObj.name||'Usuário';
+    const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
+    const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
+    div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${uid}"></div>`;
+    div.addEventListener('click',()=>{
+      const myUid=auth.currentUser.uid; const otherUid=uid;
+      const chatId=myUid<otherUid?`${myUid}_${otherUid}`:`${otherUid}_${myUid}`;
+      openChat(chatId,userObj.name||'Usuário'); resetUnread(uid);
+    });
+    return div;
+  }
+
+  function addOrUpdateUser(uid,userObj){
+    if(!userObj) return; if(uid===auth.currentUser?.uid) return;
+    const group=userObj.userGroup||'Outro';
+    const groupDom=createGroupIfNeeded(group);
+    if(userDomMap[uid]){
+      const prev=userDomMap[uid]; const el=prev.el;
+      if(prev.group!==group){try{prev.el.remove();}catch(e){} const newEl=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(newEl); userDomMap[uid]={el:newEl,group};}
+      else{const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário'; const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';}
+    } else{const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el); userDomMap[uid]={el,group};}
+    updateGroupSelect();
+  }
+
+  function removeUser(uid){const stored=userDomMap[uid]; if(stored && stored.el){try{stored.el.remove();}catch(e){} delete userDomMap[uid]; updateGroupSelect();}}
+
+  // PRIMEIRO: Carrega todos os usuários existentes
+  const usersRef = ref(db,'users');
+  const snap = await get(usersRef);
+  if(snap.exists()){
+    snap.forEach(childSnap => { addOrUpdateUser(childSnap.key, childSnap.val()); });
+  }
+
+  // DEPOIS: adiciona listeners em tempo real
+  onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val()));
+  onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val()));
+  onChildRemoved(usersRef,snap=>removeUser(snap.key));
+}
+
+/* ---------- SELECT BOX ---------- */
+function updateGroupSelect(){
+  const select = document.getElementById('groupSelect');
+  select.innerHTML='';
+  groupsMap.forEach((v, groupName)=>{
+    const option = document.createElement('option'); option.value=groupName; option.innerText=groupName; select.appendChild(option);
   });
+  select.value = currentChat;
 }
 
-// ---------- CHAT PRIVADO ----------
-function openPrivateChatFromDiv(e){
-  const div = e.currentTarget;
-  const otherUid = div.dataset.uid;
-  const otherName = div.dataset.name;
-  const myUid = auth.currentUser.uid;
-  const chatId = myUid < otherUid ? `${myUid}_${otherUid}` : `${otherUid}_${myUid}`;
-  openChat(chatId, otherName);
+function showTab(groupName){
+  groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
+  currentChat = groupName;
+  updateGroupSelect();
 }
 
-// ---------- ABRIR CHAT ----------
+document.getElementById('groupSelect').addEventListener('change',(e)=>{showTab(e.target.value);});
+
+/* ---------- CONTADOR DE MENSAGENS ---------- */
+function incrementUnread(chatId){
+  const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+  const unreadDiv = document.getElementById(unreadDivId);
+  if(!unreadDiv) return;
+  let count = parseInt(unreadDiv.innerText||'0')+1;
+  unreadDiv.innerText = count;
+  unreadDiv.style.display = 'block';
+}
+function resetUnread(chatId){
+  const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+  const unreadDiv = document.getElementById(unreadDivId);
+  if(!unreadDiv) return;
+  unreadDiv.innerText='';
+  unreadDiv.style.display='none';
+}
+
+/* ---------- CHAT ---------- */
 function openChat(chatId,chatName){
-  currentChat=chatId;
-  document.getElementById('chatHeader').innerText=chatName;
-  document.getElementById('contactsList').style.display='none';
+  currentChat=chatId; document.getElementById('chatHeader').innerText=chatName;
+  document.getElementById('contactsListContent').parentElement.style.display='none';
   document.getElementById('chat').style.display='flex';
   document.getElementById('chatMessages').innerHTML='';
-  document.getElementById('typingIndicator').style.display='none';
+  resetUnread(chatId);
 
-  if(messagesListener) messagesListener();
-
-  const messagesRef = ref(db,'messages');
-  messagesListener = onChildAdded(messagesRef, snapshot => {
-    const msg = snapshot.val();
-    if(msg.chat === currentChat){
-      appendMessage(msg, snapshot.key);
-    }
+  if(messagesListenerUnsub) messagesListenerUnsub();
+  const messagesRef=ref(db,'messages');
+  messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
+    const msg = snap.val(); if(!msg) return;
+    if(msg.chat===currentChat||(currentChat==='Chat Público' && msg.chat==='Chat Público')) renderMessage(msg);
+    else incrementUnread(msg.chat);
   });
 }
 
-// ---------- RENDERIZAR MENSAGEM ----------
-function appendMessage(msg, key){
-  const chatMessagesDiv = document.getElementById('chatMessages');
-  const container = document.createElement('div');
-  container.classList.add('message-container', msg.user===auth.currentUser.uid?'sent':'received');
+function renderMessage(msg){
+  const chatMessagesDiv=document.getElementById('chatMessages');
+  const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
 
-  const sender = document.createElement('div');
-  sender.className = 'sender-name';
-  sender.innerText = msg.username || 'Usuário';
-  if(msg.user===auth.currentUser.uid) sender.style.display='none';
-  container.appendChild(sender);
-
-  const text = document.createElement('div');
-  text.className = 'message';
-  const readCount = msg.readBy ? msg.readBy.length : 0;
-  text.setAttribute('data-read', readCount > 1 ? '✓✓' : '✓');
-  text.innerText = msg.text;
-  container.appendChild(text);
-
-  const time = new Date(msg.timestamp);
-  const timeDiv = document.createElement('div');
-  timeDiv.className = 'message-time';
-  timeDiv.innerText = `${time.getHours().toString().padStart(2,'0')}:${time.getMinutes().toString().padStart(2,'0')}`;
-  container.appendChild(timeDiv);
-
-  chatMessagesDiv.appendChild(container);
-  container.scrollIntoView({behavior:'smooth'});
-
-  if(!msg.readBy) msg.readBy = [];
-  if(!msg.readBy.includes(auth.currentUser.uid)){
-    update(ref(db,'messages/'+key+'/readBy'), [...msg.readBy, auth.currentUser.uid]);
+  if(msg.user!==auth.currentUser?.uid){
+    const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário';
+    container.appendChild(sender);
+    if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);}
   }
 
-  if(msg.user!==auth.currentUser.uid){
-    playNotificationSound();
-    showNotification(`Nova mensagem de ${msg.username}`, msg.text);
-  }
+  const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received'); txt.innerText=msg.text||''; container.appendChild(txt);
+
+  const timeDiv=document.createElement('div'); timeDiv.className='message-time'; const d=new Date(msg.timestamp||Date.now()); timeDiv.innerText=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; container.appendChild(timeDiv);
+
+  chatMessagesDiv.appendChild(container); container.scrollIntoView({behavior:'smooth'});
 }
 
-// ---------- ENVIAR MENSAGEM ----------
+/* ---------- ENVIAR MENSAGEM ---------- */
 function sendMessage(){
-  const input=document.getElementById('messageInput');
-  const msg=input.value.trim();
-  if(!msg) return;
-  push(ref(db,'messages'),{
-    chat: currentChat,
-    user:auth.currentUser.uid,
-    username:currentUserName||'Usuário',
-    text:msg,
-    timestamp:Date.now(),
-    readBy:[auth.currentUser.uid]
-  });
-  input.value='';
+  const textEl=document.getElementById('messageInput'); const text=textEl.value.trim();
+  if(!text||!currentChat||!auth.currentUser) return;
+  push(ref(db,'messages'),{text,username:currentUserName||'Usuário',user:auth.currentUser.uid,chat:currentChat,timestamp:Date.now()});
+  textEl.value=''; updateTypingStatus(false);
 }
 
-// ---------- DIGITANDO ----------
-function sendTyping() {
-  if (!auth.currentUser) return;
-
-  const statusRef = ref(db, 'users/' + auth.currentUser.uid + '/status');
-  set(statusRef, 'typing');
-
+/* ---------- TYPING INDICATOR ---------- */
+const messageInput=document.getElementById('messageInput');
+messageInput.addEventListener('input',()=>updateTypingStatus(true));
+function updateTypingStatus(isTyping){
+  if(!auth.currentUser) return;
+  const statusRef=ref(db,'users/'+auth.currentUser.uid+'/status');
+  set(statusRef,isTyping?'typing':'online');
   clearTimeout(typingTimeout);
-  typingTimeout = setTimeout(() => set(statusRef, 'online'), 1000);
+  if(isTyping) typingTimeout=setTimeout(()=>set(statusRef,'online'),2000);
 }
 
-function watchTyping() {
-  const usersRef = ref(db, 'users');
+/* ---------- LIMPAR MENSAGENS ---------- */
+function clearChat(){if(!confirm('Deseja apagar todas as mensagens do banco (isto apaga todas as conversas)?')) return; remove(ref(db,'messages')); document.getElementById('chatMessages').innerHTML='';}
 
-  // Atualiza status em tempo real
-  onChildChanged(usersRef, snapshot => {
-    const user = snapshot.val();
-    const uid = snapshot.key;
-
-    // Atualiza bolinha na lista de contatos
-    const contactDiv = document.querySelector(`.contact[data-uid="${uid}"]`);
-    if (contactDiv) {
-      let color = 'red';
-      if (user.status === 'online') color = 'green';
-      else if (user.status === 'typing') color = 'yellow';
-      contactDiv.querySelector('.status-dot').style.backgroundColor = color;
-    }
-
-    // Atualiza indicador no chat privado
-    if (currentChat.includes(uid) && uid !== auth.currentUser.uid) {
-      const typingDiv = document.getElementById('typingIndicator');
-      if (user.status === 'typing') {
-        typingDiv.style.display = 'block';
-      } else {
-        typingDiv.style.display = 'none';
-      }
-    }
-  });
-
-  // Atualiza todos os contatos e status na primeira carga
-  get(usersRef).then(snapshot => {
-    snapshot.forEach(child => {
-      const user = child.val();
-      const uid = child.key;
-      const div = document.querySelector(`.contact[data-uid="${uid}"]`);
-      if (div) {
-        let color = 'red';
-        if (user.status === 'online') color = 'green';
-        else if (user.status === 'typing') color = 'yellow';
-        div.querySelector('.status-dot').style.backgroundColor = color;
-      }
-    });
-  });
-}
-
-// ---------- NOTIFICAÇÃO ----------
-function playNotificationSound(){ document.getElementById('notificationSound').play(); }
-function showNotification(title,text){
-  if(Notification.permission==='granted'){
-    new Notification(title,{body:text});
-  }
-}
-
-// ---------- FECHAR / LIMPAR CHAT ----------
-function closeChat(){document.getElementById('chat').style.display='none';document.getElementById('contactsList').style.display='block';}
-function clearChat(){
-  if(confirm('Apagar TODAS as mensagens deste chat para todos?')){
-    const messagesRef=ref(db,'messages');
-    get(messagesRef).then(snap=>{
-      snap.forEach(child=>{
-        const msg = child.val();
-        if(msg.chat===currentChat){
-          remove(ref(db,'messages/'+child.key));
-        }
-      });
-    });
-    document.getElementById('chatMessages').innerHTML='';
-  }
-}
-
-// ---------- EVENTOS ----------
-document.getElementById('showRegisterLink').addEventListener('click', showRegister);
-document.getElementById('showLoginLink').addEventListener('click', showLogin);
-document.getElementById('registerBtn').addEventListener('click', registerUser);
-document.getElementById('loginBtn').addEventListener('click', loginUser);
-document.getElementById('logoutBtn').addEventListener('click', logout);
-document.getElementById('closeChatBtn').addEventListener('click', closeChat);
-document.getElementById('sendMsgBtn').addEventListener('click', sendMessage);
-document.getElementById('clearChatBtn').addEventListener('click', clearChat);
-
-const messageInput = document.getElementById('messageInput');
-messageInput.addEventListener('keydown', function(e){
-  if(e.key==='Enter' && !e.shiftKey){
-    e.preventDefault();
-    sendMessage();
-  } else {
-    sendTyping();
-  }
-});
+/* ---------- EVENTOS UI ---------- */
+document.getElementById('showRegisterLink').addEventListener('click',showRegister);
+document.getElementById('showLoginLink').addEventListener('click',showLogin);
+document.getElementById('registerBtn').addEventListener('click',registerUser);
+document.getElementById('loginBtn').addEventListener('click',loginUser);
+document.getElementById('logoutBtn').addEventListener('click',logout);
+document.getElementById('sendMsgBtn').addEventListener('click',sendMessage);
+document.getElementById('clearChatBtn').addEventListener('click',clearChat);
+document.getElementById('closeChatBtn').addEventListener('click',()=>{document.getElementById('chat').style.display='none'; document.getElementById('contactsListContent').parentElement.style.display='block';});
+document.getElementById('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
 </script>
 </body>
 </html>
