@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Foundation Kaleosu</title>
+<title>Foundation Kaleosu — Chat com Dropdown</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;}
 body{background-color:#121212;display:flex;justify-content:center;align-items:center;height:100vh;color:#E1E1E1;}
@@ -43,54 +43,54 @@ button:hover{background-color:#056162;}
 <body>
 <div class="container">
 
-  <!-- LOGIN -->
-  <div id="loginForm" class="form-container">
-    <h2>Login</h2>
-    <input type="email" id="loginEmail" placeholder="Email">
-    <input type="password" id="loginPassword" placeholder="Senha">
-    <button id="loginBtn">Entrar</button>
-    <div class="link" id="showRegisterLink">Criar conta</div>
-  </div>
+<!-- LOGIN -->
+<div id="loginForm" class="form-container">
+<h2>Login</h2>
+<input type="email" id="loginEmail" placeholder="Email">
+<input type="password" id="loginPassword" placeholder="Senha">
+<button id="loginBtn">Entrar</button>
+<div class="link" id="showRegisterLink">Criar conta</div>
+</div>
 
-  <!-- REGISTRO -->
-  <div id="registerForm" class="form-container" style="display:none;">
-    <h2>Cadastro</h2>
-    <input type="text" id="regName" placeholder="Nome de usuário">
-    <input type="email" id="regEmail" placeholder="Email">
-    <input type="password" id="regPassword" placeholder="Senha">
-    <input type="text" id="regGroup" placeholder="Função (ex: Professor, Aluno, Zero Absoluto)">
-    <button id="registerBtn">Cadastrar</button>
-    <div class="link" id="showLoginLink">Já tem conta? Entrar</div>
-    <div class="small-note">Ao cadastrar com uma "Função" nova, a aba correspondente será criada automaticamente.</div>
-  </div>
+<!-- REGISTRO -->
+<div id="registerForm" class="form-container" style="display:none;">
+<h2>Cadastro</h2>
+<input type="text" id="regName" placeholder="Nome de usuário">
+<input type="email" id="regEmail" placeholder="Email">
+<input type="password" id="regPassword" placeholder="Senha">
+<input type="text" id="regGroup" placeholder="Função (ex: Professor, Aluno, Zero Absoluto)">
+<button id="registerBtn">Cadastrar</button>
+<div class="link" id="showLoginLink">Já tem conta? Entrar</div>
+<div class="small-note">Ao cadastrar com uma "Função" nova, a aba correspondente será criada automaticamente.</div>
+</div>
 
-  <!-- CHAT -->
-  <div class="whatsapp-container" id="whatsappApp">
-    <div class="header">
-      <span>Foundation Kaleosu</span>
-      <div>
-        <button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
-        <button class="clear-chat" id="clearChatBtn">Apagar Chat</button>
-      </div>
-    </div>
+<!-- CHAT -->
+<div class="whatsapp-container" id="whatsappApp">
+<div class="header">
+<span>Foundation Kaleosu</span>
+<div>
+<button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
+<button class="clear-chat" id="clearChatBtn">Apagar Chat</button>
+</div>
+</div>
 
-    <div class="contacts">
-      <select id="groupSelect"></select>
-      <div id="contactsListContent"></div>
-    </div>
+<div class="contacts">
+<select id="groupSelect"></select>
+<div id="contactsListContent"></div>
+</div>
 
-    <div class="chat" id="chat">
-      <div class="header">
-        <span id="chatHeader">Chat Público</span>
-        <button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
-      </div>
-      <div class="chat-messages" id="chatMessages"></div>
-      <div class="chat-input">
-        <textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
-        <button id="sendMsgBtn">➤</button>
-      </div>
-    </div>
-  </div>
+<div class="chat" id="chat">
+<div class="header">
+<span id="chatHeader">Chat Público</span>
+<button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
+</div>
+<div class="chat-messages" id="chatMessages"></div>
+<div class="chat-input">
+<textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
+<button id="sendMsgBtn">➤</button>
+</div>
+</div>
+</div>
 </div>
 
 <script type="module">
@@ -99,13 +99,13 @@ import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, s
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBMr3KcqWq358YvERVBkSqzDsqHnqsBqCw",
-  authDomain: "chat-publico-foundation.firebaseapp.com",
-  databaseURL: "https://chat-publico-foundation-default-rtdb.firebaseio.com",
-  projectId: "chat-publico-foundation",
-  storageBucket: "chat-publico-foundation.appspot.com",
-  messagingSenderId: "1028294779813",
-  appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
+apiKey: "AIzaSyBMr3KcqWq358YvERVBkSqzDsqHnqsBqCw",
+authDomain: "chat-publico-foundation.firebaseapp.com",
+databaseURL: "https://chat-publico-foundation-default-rtdb.firebaseio.com",
+projectId: "chat-publico-foundation",
+storageBucket: "chat-publico-foundation.appspot.com",
+messagingSenderId: "1028294779813",
+appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -123,31 +123,30 @@ let typingTimeout = null;
 
 /* ---------- AUTENTICAÇÃO ---------- */
 onAuthStateChanged(auth, async user => {
-  if(user){
-    const snap = await get(ref(db,'users/'+user.uid));
-    currentUserName = snap.exists()? snap.val().name || 'Usuário':'Usuário';
-    document.getElementById('loginForm').style.display='none';
-    document.getElementById('registerForm').style.display='none';
-    document.getElementById('whatsappApp').style.display='flex';
+if(user){
+const snap = await get(ref(db,'users/'+user.uid));
+currentUserName = snap.exists()? snap.val().name || 'Usuário':'Usuário';
+document.getElementById('loginForm').style.display='none';
+document.getElementById('registerForm').style.display='none';
+document.getElementById('whatsappApp').style.display='flex';
 
-    // Reset mapas e listeners
-    groupsMap = new Map();
-    Object.keys(userDomMap).forEach(k=>delete userDomMap[k]);
-    usersListenerRefs.forEach(unsub=>unsub && unsub());
-    usersListenerRefs = [];
+// Reset mapas e listeners
+groupsMap = new Map();
+Object.keys(userDomMap).forEach(k=>delete userDomMap[k]);
+usersListenerRefs.forEach(unsub=>unsub && unsub());
+usersListenerRefs = [];
 
-    const userStatusRef = ref(db,'users/'+user.uid+'/status');
-    await set(userStatusRef,'online');
-    onDisconnect(userStatusRef).set('offline');
+const userStatusRef = ref(db,'users/'+user.uid+'/status');
+await set(userStatusRef,'online');
+onDisconnect(userStatusRef).set('offline');
 
-    setupContactsRealtime();
-    updateGroupSelect();
-    showTab('Chat Público');
-    openChat('Chat Público','Chat Público');
-  } else {
-    document.getElementById('whatsappApp').style.display='none';
-    document.getElementById('loginForm').style.display='flex';
-  }
+setupContactsRealtime();
+showTab('Chat Público');
+openChat('Chat Público','Chat Público');
+} else {
+document.getElementById('whatsappApp').style.display='none';
+document.getElementById('loginForm').style.display='flex';
+}
 });
 
 /* ---------- LOGIN / CADASTRO ---------- */
@@ -155,176 +154,213 @@ function showRegister(){document.getElementById('loginForm').style.display='none
 function showLogin(){document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none';}
 
 async function registerUser(){
-  const name=document.getElementById('regName').value.trim();
-  const email=document.getElementById('regEmail').value.trim();
-  const password=document.getElementById('regPassword').value;
-  const userGroup=document.getElementById('regGroup').value.trim() || 'Outro';
-  if(!name || !email || !password){ alert('Preencha todos os campos!'); return; }
-  try {
-    const cred = await createUserWithEmailAndPassword(auth,email,password);
-    await set(ref(db,'users/'+cred.user.uid),{ name,email,userGroup,status:'offline',createdAt:Date.now() });
-    alert(`Usuário "${name}" criado na função "${userGroup}". Faça login.`);
-    showLogin();
-  } catch(err){alert(err.message || String(err));}
+const name=document.getElementById('regName').value.trim();
+const email=document.getElementById('regEmail').value.trim();
+const password=document.getElementById('regPassword').value;
+const userGroup=document.getElementById('regGroup').value.trim() || 'Outro';
+if(!name || !email || !password){ alert('Preencha todos os campos!'); return; }
+try {
+const cred = await createUserWithEmailAndPassword(auth,email,password);
+await set(ref(db,'users/'+cred.user.uid),{ name,email,userGroup,status:'offline',createdAt:Date.now() });
+alert(`Usuário "${name}" criado na função "${userGroup}". Faça login.`);
+showLogin();
+} catch(err){alert(err.message || String(err));}
 }
 
 async function loginUser(){
-  const email=document.getElementById('loginEmail').value.trim();
-  const password=document.getElementById('loginPassword').value;
-  try{await signInWithEmailAndPassword(auth,email,password);} catch(err){alert(err.message||String(err));}
+const email=document.getElementById('loginEmail').value.trim();
+const password=document.getElementById('loginPassword').value;
+try{await signInWithEmailAndPassword(auth,email,password);} catch(err){alert(err.message||String(err));}
 }
 
 function logout(){
-  if(!auth.currentUser) return;
-  update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
+if(!auth.currentUser) return;
+update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
 }
 
 /* ---------- CONTATOS E GRUPOS ---------- */
 function setupContactsRealtime(){
-  const contactsList = document.getElementById('contactsListContent');
-  contactsList.innerHTML='';
+const contactsList = document.getElementById('contactsListContent');
+contactsList.innerHTML='';
 
-  function createGroupIfNeeded(groupName){
-    if(groupsMap.has(groupName)) return groupsMap.get(groupName);
-    const contentDiv = document.createElement('div'); contentDiv.className='tab-content';
-    contactsList.appendChild(contentDiv);
-    const obj = { contentDiv }; groupsMap.set(groupName,obj);
-    updateGroupSelect();
-    return obj;
-  }
+function createGroupIfNeeded(groupName){
+if(groupsMap.has(groupName)) return groupsMap.get(groupName);
+const contentDiv = document.createElement('div'); contentDiv.className='tab-content';
+contactsList.appendChild(contentDiv);
+const obj = { contentDiv, users: [] }; groupsMap.set(groupName,obj);
+sortGroups(); // ordenar grupos alfabeticamente
+updateGroupSelect();
+return obj;
+}
 
-  createGroupIfNeeded('Chat Público');
+// Ordena os grupos alfabeticamente no DOM
+function sortGroups(){
+const sorted = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b));
+sorted.forEach(name=>{
+const obj = groupsMap.get(name);
+contactsList.appendChild(obj.contentDiv);
+});
+}
 
-  function createPublicChatContact(){
-    const groupDom = groupsMap.get('Chat Público'); if(!groupDom) return;
-    const div=document.createElement('div'); div.className='contact'; div.dataset.uid='public'; div.dataset.name='Chat Público';
-    div.innerHTML = `<div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
-    div.addEventListener('click',()=>{currentChat='Chat Público'; openChat('Chat Público','Chat Público'); resetUnread('Chat Público');});
-    groupDom.contentDiv.appendChild(div);
-  }
-  createPublicChatContact();
+// Ordena os usuários dentro do grupo
+function sortUsers(groupName){
+const group = groupsMap.get(groupName);
+if(!group) return;
+group.users.sort((a,b)=>a.dataset.name.localeCompare(b.dataset.name));
+group.users.forEach(userEl=>group.contentDiv.appendChild(userEl));
+}
 
-  function addOrUpdateUser(uid,userObj){
-    if(!userObj) return; if(uid===auth.currentUser?.uid) return;
-    const group = userObj.userGroup || 'Outro';
-    const groupDom = createGroupIfNeeded(group);
-    if(userDomMap[uid]){
-      const prev = userDomMap[uid]; const el=prev.el;
-      if(prev.group !== group){try{prev.el.remove();}catch(e){} const newEl=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(newEl); userDomMap[uid]={el:newEl,group};}
-      else{const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário'; const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';}
-    } else{const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el); userDomMap[uid]={el,group};}
-    updateGroupSelect();
-  }
+function createPublicChatContact(){
+const groupDom = createGroupIfNeeded('Chat Público'); if(!groupDom) return;
+const div=document.createElement('div'); div.className='contact'; div.dataset.uid='public'; div.dataset.name='Chat Público';
+div.innerHTML = `<div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
+div.addEventListener('click',()=>{openChat('Chat Público','Chat Público'); resetUnread('Chat Público');});
+groupDom.contentDiv.appendChild(div);
+groupDom.users.push(div);
+sortUsers('Chat Público');
+}
+createPublicChatContact();
 
-  function createUserElement(uid,userObj){
-    const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.name=userObj.name||'Usuário';
-    const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
-    const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
-    div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${uid}"></div>`;
-    div.addEventListener('click',()=>{
-      const myUid=auth.currentUser.uid; const otherUid=uid;
-      const chatId=myUid<otherUid?`${myUid}_${otherUid}`:`${otherUid}_${myUid}`;
-      currentChat = chatId;
-      openChat(chatId,userObj.name||'Usuário'); 
-      resetUnread(uid);
-    });
-    return div;
-  }
+function addOrUpdateUser(uid,userObj){
+if(!userObj) return; if(uid===auth.currentUser?.uid) return;
+const group = userObj.userGroup || 'Outro';
+const groupDom = createGroupIfNeeded(group);
+if(userDomMap[uid]){
+const prev = userDomMap[uid]; const el=prev.el;
+if(prev.group !== group){
+try{prev.el.remove();}catch(e){}
+const newEl=createUserElement(uid,userObj);
+groupDom.contentDiv.appendChild(newEl);
+groupDom.users.push(newEl);
+sortUsers(group);
+userDomMap[uid]={el:newEl,group};
+} else{
+const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário';
+const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
+}
+} else{
+const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el);
+groupDom.users.push(el);
+sortUsers(group);
+userDomMap[uid]={el,group};
+}
+updateGroupSelect();
+}
 
-  function removeUser(uid){const stored=userDomMap[uid]; if(stored && stored.el){try{stored.el.remove();}catch(e){} delete userDomMap[uid]; updateGroupSelect();}}
+function createUserElement(uid,userObj){
+const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.name=userObj.name||'Usuário';
+const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
+const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
+div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${uid}"></div>`;
+div.addEventListener('click',()=>{
+const myUid=auth.currentUser.uid; const otherUid=uid;
+const chatId=myUid<otherUid?`${myUid}_${otherUid}`:`${otherUid}_${myUid}`;
+openChat(chatId,userObj.name||'Usuário'); resetUnread(uid);
+});
+return div;
+}
 
-  const usersRef = ref(db,'users');
-  usersListenerRefs.push(onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
-  usersListenerRefs.push(onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
-  usersListenerRefs.push(onChildRemoved(usersRef,snap=>removeUser(snap.key)));
+function removeUser(uid){const stored=userDomMap[uid]; if(stored && stored.el){
+try{stored.el.remove();}catch(e){}
+const group = groupsMap.get(stored.group);
+if(group){group.users = group.users.filter(u=>u!==stored.el);}
+delete userDomMap[uid];
+updateGroupSelect();
+}}
+
+const usersRef = ref(db,'users');
+usersListenerRefs.push(onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+usersListenerRefs.push(onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+usersListenerRefs.push(onChildRemoved(usersRef,snap=>removeUser(snap.key)));
 }
 
 /* ---------- SELECT BOX ---------- */
 function updateGroupSelect(){
-  const select = document.getElementById('groupSelect');
-  select.innerHTML='';
-  groupsMap.forEach((v, groupName)=>{
-    const option = document.createElement('option'); option.value=groupName; option.innerText=groupName; select.appendChild(option);
-  });
-  select.value = currentGroup;
+const select = document.getElementById('groupSelect');
+select.innerHTML='';
+const sortedGroups = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b));
+sortedGroups.forEach(groupName=>{
+const option = document.createElement('option'); option.value=groupName; option.innerText=groupName; select.appendChild(option);
+});
+select.value = currentChat;
 }
 
 function showTab(groupName){
-  groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
-  currentGroup = groupName;
-  updateGroupSelect();
+groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
+currentChat = groupName;
+updateGroupSelect();
 }
 
 document.getElementById('groupSelect').addEventListener('change',(e)=>{showTab(e.target.value);});
 
 /* ---------- CONTADOR DE MENSAGENS ---------- */
 function incrementUnread(chatId){
-  const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
-  const unreadDiv = document.getElementById(unreadDivId);
-  if(!unreadDiv) return;
-  let count = parseInt(unreadDiv.innerText||'0')+1;
-  unreadDiv.innerText = count;
-  unreadDiv.style.display = 'block';
+const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+const unreadDiv = document.getElementById(unreadDivId);
+if(!unreadDiv) return;
+let count = parseInt(unreadDiv.innerText||'0')+1;
+unreadDiv.innerText = count;
+unreadDiv.style.display = 'block';
 }
 function resetUnread(chatId){
-  const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
-  const unreadDiv = document.getElementById(unreadDivId);
-  if(!unreadDiv) return;
-  unreadDiv.innerText='';
-  unreadDiv.style.display='none';
+const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+const unreadDiv = document.getElementById(unreadDivId);
+if(!unreadDiv) return;
+unreadDiv.innerText='';
+unreadDiv.style.display='none';
 }
 
 /* ---------- CHAT ---------- */
 function openChat(chatId,chatName){
-  currentChat=chatId; document.getElementById('chatHeader').innerText=chatName;
-  document.getElementById('contactsListContent').parentElement.style.display='none';
-  document.getElementById('chat').style.display='flex';
-  document.getElementById('chatMessages').innerHTML='';
-  resetUnread(chatId);
+currentChat=chatId; document.getElementById('chatHeader').innerText=chatName;
+document.getElementById('contactsListContent').parentElement.style.display='none';
+document.getElementById('chat').style.display='flex';
+document.getElementById('chatMessages').innerHTML='';
+resetUnread(chatId);
 
-  if(messagesListenerUnsub) messagesListenerUnsub();
-  const messagesRef=ref(db,'messages');
-  messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
-    const msg = snap.val(); if(!msg) return;
-    if(msg.chat===currentChat||(currentChat==='Chat Público' && msg.chat==='Chat Público')) renderMessage(msg);
-    else incrementUnread(msg.chat);
-  });
+if(messagesListenerUnsub) messagesListenerUnsub();
+const messagesRef=ref(db,'messages');
+messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
+const msg = snap.val(); if(!msg) return;
+if(msg.chat===currentChat||(currentChat==='Chat Público' && msg.chat==='Chat Público')) renderMessage(msg);
+else incrementUnread(msg.chat);
+});
 }
 
 function renderMessage(msg){
-  const chatMessagesDiv=document.getElementById('chatMessages');
-  const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
+const chatMessagesDiv=document.getElementById('chatMessages');
+const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
 
-  if(msg.user!==auth.currentUser?.uid){
-    const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário';
-    container.appendChild(sender);
-    if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);}
-  }
+if(msg.user!==auth.currentUser?.uid){
+const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário';
+container.appendChild(sender);
+if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);}
+}
 
-  const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received'); txt.innerText=msg.text||''; container.appendChild(txt);
+const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received'); txt.innerText=msg.text||''; container.appendChild(txt);
 
-  const timeDiv=document.createElement('div'); timeDiv.className='message-time'; const d=new Date(msg.timestamp||Date.now()); timeDiv.innerText=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; container.appendChild(timeDiv);
+const timeDiv=document.createElement('div'); timeDiv.className='message-time'; const d=new Date(msg.timestamp||Date.now()); timeDiv.innerText=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; container.appendChild(timeDiv);
 
-  chatMessagesDiv.appendChild(container); container.scrollIntoView({behavior:'smooth'});
+chatMessagesDiv.appendChild(container); container.scrollIntoView({behavior:'smooth'});
 }
 
 /* ---------- ENVIAR MENSAGEM ---------- */
 function sendMessage(){
-  const textEl=document.getElementById('messageInput'); const text=textEl.value.trim();
-  if(!text||!currentChat||!auth.currentUser) return;
-  push(ref(db,'messages'),{text,username:currentUserName||'Usuário',user:auth.currentUser.uid,chat:currentChat,timestamp:Date.now()});
-  textEl.value=''; updateTypingStatus(false);
+const textEl=document.getElementById('messageInput'); const text=textEl.value.trim();
+if(!text||!currentChat||!auth.currentUser) return;
+push(ref(db,'messages'),{text,username:currentUserName||'Usuário',user:auth.currentUser.uid,chat:currentChat,timestamp:Date.now()});
+textEl.value=''; updateTypingStatus(false);
 }
 
 /* ---------- TYPING INDICATOR ---------- */
 const messageInput=document.getElementById('messageInput');
 messageInput.addEventListener('input',()=>updateTypingStatus(true));
 function updateTypingStatus(isTyping){
-  if(!auth.currentUser) return;
-  const statusRef=ref(db,'users/'+auth.currentUser.uid+'/status');
-  set(statusRef,isTyping?'typing':'online');
-  clearTimeout(typingTimeout);
-  if(isTyping) typingTimeout=setTimeout(()=>set(statusRef,'online'),2000);
+if(!auth.currentUser) return;
+const statusRef=ref(db,'users/'+auth.currentUser.uid+'/status');
+set(statusRef,isTyping?'typing':'online');
+clearTimeout(typingTimeout);
+if(isTyping) typingTimeout=setTimeout(()=>set(statusRef,'online'),2000);
 }
 
 /* ---------- LIMPAR MENSAGENS ---------- */
