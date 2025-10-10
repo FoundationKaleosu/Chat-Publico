@@ -95,7 +95,7 @@ button:hover{background-color:#056162;}
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, set, get, update, onDisconnect, remove } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, set, get, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
 
 const firebaseConfig = {
@@ -114,7 +114,9 @@ const auth = getAuth(app);
 
 let currentUserName = '';
 let currentChat = 'Chat Público';
+let currentGroup = 'Chat Público';
 let messagesListenerUnsub = null;
+let usersListenerRefs = [];
 const userDomMap = {};
 let groupsMap = new Map();
 let typingTimeout = null;
@@ -128,11 +130,18 @@ onAuthStateChanged(auth, async user => {
     document.getElementById('registerForm').style.display='none';
     document.getElementById('whatsappApp').style.display='flex';
 
+    // Reset mapas e listeners
+    groupsMap = new Map();
+    Object.keys(userDomMap).forEach(k=>delete userDomMap[k]);
+    usersListenerRefs.forEach(unsub=>unsub && unsub());
+    usersListenerRefs = [];
+
     const userStatusRef = ref(db,'users/'+user.uid+'/status');
     await set(userStatusRef,'online');
     onDisconnect(userStatusRef).set('offline');
 
-    await setupContactsRealtime();
+    setupContactsRealtime();
+    updateGroupSelect();
     showTab('Chat Público');
     openChat('Chat Público','Chat Público');
   } else {
@@ -170,44 +179,42 @@ function logout(){
   update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
 }
 
-/* ---------- CONTATOS E GRUPOS (REVISADO) ---------- */
-async function setupContactsRealtime() {
+/* ---------- CONTATOS E GRUPOS ---------- */
+function setupContactsRealtime(){
   const contactsList = document.getElementById('contactsListContent');
-  contactsList.innerHTML = '';
-  groupsMap = new Map();
+  contactsList.innerHTML='';
 
-  function createGroupIfNeeded(groupName) {
-    if (groupsMap.has(groupName)) return groupsMap.get(groupName);
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'tab-content';
+  function createGroupIfNeeded(groupName){
+    if(groupsMap.has(groupName)) return groupsMap.get(groupName);
+    const contentDiv = document.createElement('div'); contentDiv.className='tab-content';
     contactsList.appendChild(contentDiv);
-    const obj = { contentDiv };
-    groupsMap.set(groupName, obj);
+    const obj = { contentDiv }; groupsMap.set(groupName,obj);
     updateGroupSelect();
     return obj;
   }
 
   createGroupIfNeeded('Chat Público');
 
-  function createPublicChatContact() {
-    const groupDom = groupsMap.get('Chat Público');
-    if (!groupDom) return;
-    const div = document.createElement('div');
-    div.className = 'contact';
-    div.dataset.uid = 'public';
-    div.dataset.name = 'Chat Público';
-    div.innerHTML = `
-      <div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div>
-      <div class="name">Chat Público</div>
-      <div class="unread-count" id="unread-public"></div>
-    `;
-    div.addEventListener('click', () => {
-      openChat('Chat Público', 'Chat Público');
-      resetUnread('Chat Público');
-    });
+  function createPublicChatContact(){
+    const groupDom = groupsMap.get('Chat Público'); if(!groupDom) return;
+    const div=document.createElement('div'); div.className='contact'; div.dataset.uid='public'; div.dataset.name='Chat Público';
+    div.innerHTML = `<div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
+    div.addEventListener('click',()=>{currentChat='Chat Público'; openChat('Chat Público','Chat Público'); resetUnread('Chat Público');});
     groupDom.contentDiv.appendChild(div);
   }
   createPublicChatContact();
+
+  function addOrUpdateUser(uid,userObj){
+    if(!userObj) return; if(uid===auth.currentUser?.uid) return;
+    const group = userObj.userGroup || 'Outro';
+    const groupDom = createGroupIfNeeded(group);
+    if(userDomMap[uid]){
+      const prev = userDomMap[uid]; const el=prev.el;
+      if(prev.group !== group){try{prev.el.remove();}catch(e){} const newEl=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(newEl); userDomMap[uid]={el:newEl,group};}
+      else{const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário'; const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';}
+    } else{const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el); userDomMap[uid]={el,group};}
+    updateGroupSelect();
+  }
 
   function createUserElement(uid,userObj){
     const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.name=userObj.name||'Usuário';
@@ -217,36 +224,19 @@ async function setupContactsRealtime() {
     div.addEventListener('click',()=>{
       const myUid=auth.currentUser.uid; const otherUid=uid;
       const chatId=myUid<otherUid?`${myUid}_${otherUid}`:`${otherUid}_${myUid}`;
-      openChat(chatId,userObj.name||'Usuário'); resetUnread(uid);
+      currentChat = chatId;
+      openChat(chatId,userObj.name||'Usuário'); 
+      resetUnread(uid);
     });
     return div;
   }
 
-  function addOrUpdateUser(uid,userObj){
-    if(!userObj) return; if(uid===auth.currentUser?.uid) return;
-    const group=userObj.userGroup||'Outro';
-    const groupDom=createGroupIfNeeded(group);
-    if(userDomMap[uid]){
-      const prev=userDomMap[uid]; const el=prev.el;
-      if(prev.group!==group){try{prev.el.remove();}catch(e){} const newEl=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(newEl); userDomMap[uid]={el:newEl,group};}
-      else{const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário'; const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';}
-    } else{const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el); userDomMap[uid]={el,group};}
-    updateGroupSelect();
-  }
-
   function removeUser(uid){const stored=userDomMap[uid]; if(stored && stored.el){try{stored.el.remove();}catch(e){} delete userDomMap[uid]; updateGroupSelect();}}
 
-  // PRIMEIRO: Carrega todos os usuários existentes
   const usersRef = ref(db,'users');
-  const snap = await get(usersRef);
-  if(snap.exists()){
-    snap.forEach(childSnap => { addOrUpdateUser(childSnap.key, childSnap.val()); });
-  }
-
-  // DEPOIS: adiciona listeners em tempo real
-  onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val()));
-  onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val()));
-  onChildRemoved(usersRef,snap=>removeUser(snap.key));
+  usersListenerRefs.push(onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+  usersListenerRefs.push(onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+  usersListenerRefs.push(onChildRemoved(usersRef,snap=>removeUser(snap.key)));
 }
 
 /* ---------- SELECT BOX ---------- */
@@ -256,12 +246,12 @@ function updateGroupSelect(){
   groupsMap.forEach((v, groupName)=>{
     const option = document.createElement('option'); option.value=groupName; option.innerText=groupName; select.appendChild(option);
   });
-  select.value = currentChat;
+  select.value = currentGroup;
 }
 
 function showTab(groupName){
   groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
-  currentChat = groupName;
+  currentGroup = groupName;
   updateGroupSelect();
 }
 
