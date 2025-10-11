@@ -38,6 +38,9 @@ button:hover{background-color:#056162;}
 .typing-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;background:yellow;margin-left:6px;animation:blink 1s infinite;}
 @keyframes blink{0%,50%,100%{opacity:0;}25%,75%{opacity:1;}}
 .small-note{font-size:12px;color:#bbb;text-align:center;padding:8px;}
+/* ---------- ABA DE PESQUISA ---------- */
+.search-bar{padding:10px;background-color:#1E1E1E;border-bottom:1px solid #333;}
+.search-bar input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #333;background-color:#2C2C2C;color:#E1E1E1;font-size:14px;}
 </style>
 </head>
 <body>
@@ -72,6 +75,11 @@ button:hover{background-color:#056162;}
 <button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
 <button class="clear-chat" id="clearChatBtn">Apagar Chat</button>
 </div>
+</div>
+
+<!-- 🔍 ABA DE PESQUISA ADICIONADA -->
+<div class="search-bar">
+<input type="text" id="searchInput" placeholder="Pesquisar contatos...">
 </div>
 
 <div class="contacts">
@@ -188,12 +196,11 @@ if(groupsMap.has(groupName)) return groupsMap.get(groupName);
 const contentDiv = document.createElement('div'); contentDiv.className='tab-content';
 contactsList.appendChild(contentDiv);
 const obj = { contentDiv, users: [] }; groupsMap.set(groupName,obj);
-sortGroups(); // ordenar grupos alfabeticamente
+sortGroups();
 updateGroupSelect();
 return obj;
 }
 
-// Ordena os grupos alfabeticamente no DOM
 function sortGroups(){
 const sorted = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b));
 sorted.forEach(name=>{
@@ -202,7 +209,6 @@ contactsList.appendChild(obj.contentDiv);
 });
 }
 
-// Ordena os usuários dentro do grupo
 function sortUsers(groupName){
 const group = groupsMap.get(groupName);
 if(!group) return;
@@ -220,7 +226,6 @@ groupDom.users.push(div);
 sortUsers('Chat Público');
 }
 createPublicChatContact();
-
 function addOrUpdateUser(uid,userObj){
 if(!userObj) return; if(uid===auth.currentUser?.uid) return;
 const group = userObj.userGroup || 'Outro';
@@ -292,6 +297,15 @@ updateGroupSelect();
 }
 
 document.getElementById('groupSelect').addEventListener('change',(e)=>{showTab(e.target.value);});
+
+/* ---------- PESQUISA DE CONTATOS ---------- */
+document.getElementById('searchInput').addEventListener('input', e => {
+const query = e.target.value.toLowerCase();
+Object.values(userDomMap).forEach(({ el }) => {
+const name = el.dataset.name.toLowerCase();
+el.style.display = name.includes(query) ? 'flex' : 'none';
+});
+});
 
 /* ---------- CONTADOR DE MENSAGENS ---------- */
 function incrementUnread(chatId){
