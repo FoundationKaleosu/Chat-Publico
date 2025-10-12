@@ -32,7 +32,7 @@ button:hover{background-color:#056162;}
 .message.sent{background-color:#056162;color:#E1E1E1;}
 .message.received{background-color:#262D31;color:#E1E1E1;}
 .message-time{font-size:10px;color:#888;text-align:right;margin-top:4px;}
-.chat-input{display:flex;padding:10px;background-color:#2C2C2C;border-top:1px solid #333;}
+.chat-input{display:flex;padding:10px;background-color:#2C2C2C;border-top:1px solid #333;align-items:flex-end;}
 .chat-input textarea{flex:1;padding:10px;border-radius:25px;border:1px solid #333;outline:none;font-size:14px;background-color:#1E1E1E;color:#E1E1E1;resize:none;height:44px;}
 .chat-input button{background-color:#075E54;color:#E1E1E1;border:none;padding:10px 14px;margin-left:8px;border-radius:8px;cursor:pointer;}
 .typing-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;background:yellow;margin-left:6px;animation:blink 1s infinite;}
@@ -41,6 +41,15 @@ button:hover{background-color:#056162;}
 /* ---------- ABA DE PESQUISA ---------- */
 .search-bar{padding:10px;background-color:#1E1E1E;border-bottom:1px solid #333;}
 .search-bar input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #333;background-color:#2C2C2C;color:#E1E1E1;font-size:14px;}
+/* reply preview */
+#replyPreview{padding:8px 10px;border-left:3px solid #4a90e2;background:#161616;margin:8px;border-radius:6px;display:none;font-size:13px;color:#ddd}
+.reply-quoted{font-size:12px;color:#cfcfcf;opacity:0.9;margin-bottom:6px;}
+.date-separator{align-self:center;background:#2a2a2a;color:#bbb;padding:6px 10px;border-radius:12px;font-size:12px;margin:10px 0}
+.mention{font-weight:bold;color:#FFD54F}
+.suggestions{position:relative}
+.suggestions-list{position:absolute;bottom:52px;left:10px;background:#1b1b1b;border:1px solid #333;padding:6px;border-radius:6px;max-height:160px;overflow:auto;z-index:50}
+.suggestions-list div{padding:6px;border-radius:4px;cursor:pointer}
+.suggestions-list div:hover{background:#2a2a2a}
 </style>
 </head>
 <body>
@@ -93,8 +102,10 @@ button:hover{background-color:#056162;}
 <button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
 </div>
 <div class="chat-messages" id="chatMessages"></div>
-<div class="chat-input">
+<div id="replyPreview"></div>
+<div class="chat-input suggestions">
 <textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
+<div class="suggestions-list" id="suggestions" style="display:none"></div>
 <button id="sendMsgBtn">➤</button>
 </div>
 </div>
@@ -128,6 +139,8 @@ let usersListenerRefs = [];
 const userDomMap = {};
 let groupsMap = new Map();
 let typingTimeout = null;
+let replyTo = null; // store message being replied to
+let lastMessageDateMap = {}; // track last shown date per chat to render separators
 
 /* ---------- AUTENTICAÇÃO ---------- */
 onAuthStateChanged(auth, async user => {
@@ -226,6 +239,7 @@ groupDom.users.push(div);
 sortUsers('Chat Público');
 }
 createPublicChatContact();
+
 function addOrUpdateUser(uid,userObj){
 if(!userObj) return; if(uid===auth.currentUser?.uid) return;
 const group = userObj.userGroup || 'Outro';
@@ -290,8 +304,7 @@ const option = document.createElement('option'); option.value=groupName; option.
 select.value = currentChat;
 }
 
-function showTab(groupName){
-groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
+function showTab(groupName){groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
 currentChat = groupName;
 updateGroupSelect();
 }
@@ -308,8 +321,18 @@ el.style.display = name.includes(query) ? 'flex' : 'none';
 });
 
 /* ---------- CONTADOR DE MENSAGENS ---------- */
+function getOtherUserIdFromChat(chatId){
+if(!auth.currentUser) return null;
+if(chatId==='Chat Público') return 'public';
+const parts = chatId.split('_');
+if(parts.length!==2) return chatId;
+const a=parts[0], b=parts[1];
+return (a===auth.currentUser.uid)?b: (b===auth.currentUser.uid)?a : chatId; // return other uid if current user is participant
+}
+
 function incrementUnread(chatId){
-const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+const target = getOtherUserIdFromChat(chatId);
+const unreadDivId = (target==='Chat Público' || target==='public')? 'unread-public' : 'unread-'+target;
 const unreadDiv = document.getElementById(unreadDivId);
 if(!unreadDiv) return;
 let count = parseInt(unreadDiv.innerText||'0')+1;
@@ -317,7 +340,8 @@ unreadDiv.innerText = count;
 unreadDiv.style.display = 'block';
 }
 function resetUnread(chatId){
-const unreadDivId = (chatId==='Chat Público')?'unread-public':'unread-'+chatId;
+const target = (chatId==='Chat Público')? 'public' : chatId;
+const unreadDivId = (target==='Chat Público' || target==='public')? 'unread-public' : 'unread-'+target;
 const unreadDiv = document.getElementById(unreadDivId);
 if(!unreadDiv) return;
 unreadDiv.innerText='';
@@ -330,51 +354,158 @@ currentChat=chatId; document.getElementById('chatHeader').innerText=chatName;
 document.getElementById('contactsListContent').parentElement.style.display='none';
 document.getElementById('chat').style.display='flex';
 document.getElementById('chatMessages').innerHTML='';
+document.getElementById('replyPreview').style.display='none'; replyTo=null; lastMessageDateMap[chatId]=null;
 resetUnread(chatId);
 
 if(messagesListenerUnsub) messagesListenerUnsub();
 const messagesRef=ref(db,'messages');
 messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
 const msg = snap.val(); if(!msg) return;
-if(msg.chat===currentChat||(currentChat==='Chat Público' && msg.chat==='Chat Público')) renderMessage(msg);
-else incrementUnread(msg.chat);
+// if message belongs to this chat (public OR private) render, else increment unread
+if(msg.chat===currentChat || (currentChat==='Chat Público' && msg.chat==='Chat Público')) {
+renderMessage(msg);
+} else {
+// if the incoming message is private and doesn't involve current user, ignore
+if(msg.chat && msg.chat.includes('_')){
+const other = getOtherUserIdFromChat(msg.chat);
+// increment unread only if current user is part of chat
+if(other && other!==msg.user && (msg.chat.includes(auth.currentUser.uid))) incrementUnread(msg.chat);
+} else {
+incrementUnread(msg.chat);
+}
+}
 });
+}
+
+function formatDateSeparator(date){
+const d = new Date(date);
+const today = new Date();
+const diff = Math.floor((new Date(today.getFullYear(),today.getMonth(),today.getDate()) - new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
+if(diff===0) return 'Hoje';
+if(diff===1) return 'Ontem';
+return d.toLocaleDateString('pt-BR');
 }
 
 function renderMessage(msg){
 const chatMessagesDiv=document.getElementById('chatMessages');
-const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
-
-if(msg.user!==auth.currentUser?.uid){
-const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário';
-container.appendChild(sender);
-if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);}
+// date separator logic
+const lastDate = lastMessageDateMap[msg.chat] || null;
+const thisDay = new Date(msg.timestamp||Date.now());
+const thisDayKey = `${thisDay.getFullYear()}-${thisDay.getMonth()+1}-${thisDay.getDate()}`;
+if(lastDate !== thisDayKey){
+const sep = document.createElement('div'); sep.className='date-separator'; sep.innerText = formatDateSeparator(msg.timestamp||Date.now());
+chatMessagesDiv.appendChild(sep);
+lastMessageDateMap[msg.chat] = thisDayKey;
 }
 
-const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received'); txt.innerText=msg.text||''; container.appendChild(txt);
+const wasAtBottom = (chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight) < 80;
+
+const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
+container.dataset.msgId = msg.id || '';
+
+if(msg.user!==auth.currentUser?.uid){
+const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário'; container.appendChild(sender);
+if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);} 
+}
+
+// if message is a reply
+if(msg.reply && msg.reply.text){
+const quoted=document.createElement('div'); quoted.className='reply-quoted'; quoted.innerText = `${msg.reply.username||'Usuário'}: ${msg.reply.text.length>120?msg.reply.text.slice(0,117)+'...':msg.reply.text}`;
+container.appendChild(quoted);
+}
+
+const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received');
+// highlight mentions
+let displayed = msg.text||'';
+if(msg.mentions && Array.isArray(msg.mentions) && msg.mentions.includes(auth.currentUser?.uid)){
+displayed = displayed.replace(new RegExp(`@${auth.currentUser?.displayName || currentUserName}`,'g'), `<span class="mention">@${currentUserName}</span>`);
+}
+// basic HTML escape
+function escapeHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+txt.innerHTML = escapeHtml(displayed).replace(/@([\w\-]+)/g,'<span class="mention">@$1</span>');
+container.appendChild(txt);
 
 const timeDiv=document.createElement('div'); timeDiv.className='message-time'; const d=new Date(msg.timestamp||Date.now()); timeDiv.innerText=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; container.appendChild(timeDiv);
 
-chatMessagesDiv.appendChild(container); container.scrollIntoView({behavior:'smooth'});
+// make message clickable to reply
+container.addEventListener('click',()=>{
+if(msg.user===auth.currentUser?.uid) return; // only reply to others for now
+replyTo = { id: msg.id || null, text: msg.text, username: msg.username, user: msg.user };
+showReplyPreview(replyTo);
+});
+
+chatMessagesDiv.appendChild(container);
+if(wasAtBottom) chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+}
+
+function showReplyPreview(reply){
+const el = document.getElementById('replyPreview');
+el.style.display='block';
+el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>Respondendo a ${reply.username||'Usuário'}</strong><div class=\"reply-quoted\">${reply.text.length>120?reply.text.slice(0,117)+'...':reply.text}</div></div><button id=\"cancelReply\" style=\"background:none;border:none;color:#fff;cursor:pointer;font-size:16px\">✖</button></div>`;
+document.getElementById('cancelReply').addEventListener('click',()=>{replyTo=null; document.getElementById('replyPreview').style.display='none';});
 }
 
 /* ---------- ENVIAR MENSAGEM ---------- */
-function sendMessage(){
+async function sendMessage(){
 const textEl=document.getElementById('messageInput'); const text=textEl.value.trim();
 if(!text||!currentChat||!auth.currentUser) return;
-push(ref(db,'messages'),{text,username:currentUserName||'Usuário',user:auth.currentUser.uid,chat:currentChat,timestamp:Date.now()});
+// detect mentions by @username (simple) -> map to uid if possible
+const mentions = [];
+const mentionMatches = text.match(/@([\w\-]+)/g);
+if(mentionMatches){
+mentionMatches.forEach(m=>{
+const name = m.slice(1);
+// find user by display name in userDomMap
+for(const uid in userDomMap){
+if(userDomMap[uid].el && userDomMap[uid].el.dataset.name.toLowerCase()===name.toLowerCase()){mentions.push(uid);break;}
+}
+});
+}
+
+const payload = { text, username: currentUserName||'Usuário', user: auth.currentUser.uid, chat: currentChat, timestamp: Date.now(), mentions, reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null };
+await push(ref(db,'messages'), payload);
 textEl.value=''; updateTypingStatus(false);
+replyTo=null; document.getElementById('replyPreview').style.display='none';
 }
 
 /* ---------- TYPING INDICATOR ---------- */
 const messageInput=document.getElementById('messageInput');
-messageInput.addEventListener('input',()=>updateTypingStatus(true));
+messageInput.addEventListener('input',()=>{
+updateTypingStatus(true);
+handleMentionSuggestions();
+});
 function updateTypingStatus(isTyping){
 if(!auth.currentUser) return;
 const statusRef=ref(db,'users/'+auth.currentUser.uid+'/status');
 set(statusRef,isTyping?'typing':'online');
 clearTimeout(typingTimeout);
 if(isTyping) typingTimeout=setTimeout(()=>set(statusRef,'online'),2000);
+}
+
+/* ---------- MENTIONS SUGGESTION UI ---------- */
+function handleMentionSuggestions(){
+const val = messageInput.value;
+const m = val.slice(0,messageInput.selectionStart).match(/@([\w\-]*)$/);
+const suggestionsEl = document.getElementById('suggestions');
+if(!m){ suggestionsEl.style.display='none'; return; }
+const query = m[1].toLowerCase();
+// collect users
+const items = [];
+Object.keys(userDomMap).forEach(uid=>{ const name = userDomMap[uid].el.dataset.name || ''; if(name.toLowerCase().includes(query)) items.push({uid,name}); });
+if(items.length===0){ suggestionsEl.style.display='none'; return; }
+suggestionsEl.innerHTML = items.map(it=>`<div data-uid="${it.uid}" data-name="${it.name}">${it.name}</div>`).join('');
+suggestionsEl.style.display='block';
+Array.from(suggestionsEl.children).forEach(ch=>{
+ch.addEventListener('click',()=>{
+const name = ch.dataset.name;
+// replace last @token with @name 
+const before = messageInput.value.slice(0,messageInput.selectionStart).replace(/@([\w\-]*)$/,'@'+name);
+const after = messageInput.value.slice(messageInput.selectionStart);
+messageInput.value = before + after;
+messageInput.focus();
+suggestionsEl.style.display='none';
+});
+});
 }
 
 /* ---------- LIMPAR MENSAGENS ---------- */
@@ -390,6 +521,7 @@ document.getElementById('sendMsgBtn').addEventListener('click',sendMessage);
 document.getElementById('clearChatBtn').addEventListener('click',clearChat);
 document.getElementById('closeChatBtn').addEventListener('click',()=>{document.getElementById('chat').style.display='none'; document.getElementById('contactsListContent').parentElement.style.display='block';});
 document.getElementById('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
+
 </script>
 </body>
 </html>
