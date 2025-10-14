@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Foundation Kaleosu (Chat Público)</title>
 <style>
+/* Estilos Base */
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Tahoma,sans-serif;}
 body{background-color:#121212;display:flex;justify-content:center;align-items:center;height:100vh;color:#E1E1E1;}
 .container{width:100%;max-width:480px;background-color:#1E1E1E;border-radius:10px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.7);}
@@ -15,47 +16,364 @@ button:hover{background-color:#056162;}
 .link{color:#075E54;text-align:center;cursor:pointer;font-size:14px;}
 .whatsapp-container{display:none;flex-direction:column;height:100vh;}
 .header{height:60px;background-color:#1E1E1E;color:#E1E1E1;display:flex;align-items:center;padding:0 12px;font-weight:bold;font-size:18px;justify-content:space-between;box-shadow:0 2px 4px rgba(0,0,0,0.5);}
+/* Novo: Estilo para a área de botões do cabeçalho */
+.header-actions {
+    display: flex;
+    gap: 8px; /* Espaço entre os botões */
+    align-items: center;
+}
 .contacts,.chat{flex:1;overflow-y:auto;background-color:#121212;-webkit-overflow-scrolling:touch;}
 .contact{display:flex;align-items:center;padding:12px;border-bottom:1px solid #333;cursor:pointer;transition:0.18s;position:relative;}
 .contact:hover{background-color:#2C2C2C;}
 .avatar{width:46px;height:46px;border-radius:50%;background-color:#075E54;color:#E1E1E1;display:flex;justify-content:center;align-items:center;font-weight:bold;font-size:18px;margin-right:10px;position:relative;}
 .status-dot{position:absolute;bottom:3px;right:3px;width:12px;height:12px;border-radius:50%;border:2px solid #1E1E1E;}
 .name{font-weight:bold;font-size:15px;color:#E1E1E1;}
-.unread-count{position:absolute;top:8px;right:10px;background:red;color:#fff;font-size:12px;padding:2px 6px;border-radius:12px;display:none;}
+
+.unread-count{
+    position:absolute;
+    top:50%;
+    right:10px;
+    transform:translateY(-50%);
+    background:#075E54; 
+    color:#fff;
+    font-size:12px;
+    padding:3px 7px;
+    border-radius:15px;
+    display:none;
+    min-width:24px;
+    text-align:center;
+    font-weight: bold;
+} 
 .chat{display:none;flex-direction:column;background-color:#121212;}
 .chat-messages{flex:1;padding:10px;overflow-y:auto;display:flex;flex-direction:column;scroll-behavior:smooth;}
-.message-container{margin-bottom:12px;display:flex;flex-direction:column;max-width:75%;word-wrap:break-word;white-space:pre-wrap;}
+.message-container{margin-bottom:12px;display:flex;flex-direction:column;max-width:75%;word-wrap:break-word;white-space:pre-wrap;
+cursor: pointer; 
+position: relative; 
+}
 .message-container.sent{align-self:flex-end;}
 .message-container.received{align-self:flex-start;}
 .sender-name{font-size:12px;font-weight:bold;color:#075E54;margin-bottom:6px;}
-.message{font-size:14px;padding:10px 14px;border-radius:12px;display:inline-block;max-width:100%;white-space:pre-wrap;}
+
+/* Estilo para a caixa de resposta dentro do balão da mensagem */
+.reply-box {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-bottom: 8px;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+    max-height: 48px;
+}
+.message.sent .reply-box {
+    background-color: rgba(0, 0, 0, 0.2);
+}
+.reply-bar-color {
+    width: 4px;
+    margin-right: 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+.reply-quoted-name {
+    font-size: 13px;
+    font-weight: bold;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.reply-quoted-text {
+    font-size: 12px;
+    color: #999; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Ajuste crítico: Remove position: relative/absolute e usa flexbox para controlar o conteúdo */
+.message{
+    font-size:14px;
+    padding:8px 10px; /* Padding interno do balão */
+    border-radius:12px;
+    display:inline-flex; /* Usa inline-flex para abraçar o conteúdo */
+    flex-direction: column; /* Conteúdo em coluna (reply, texto, footer) */
+    max-width:100%;
+    position: relative; /* Mantido para ser o container da bolha */
+}
 .message.sent{background-color:#056162;color:#E1E1E1;}
 .message.received{background-color:#262D31;color:#E1E1E1;}
-.message-time{font-size:10px;color:#888;text-align:right;margin-top:4px;}
+
+/* Novo Wrapper para o Conteúdo + Status (para que o status fique na mesma linha do texto se for pequeno) */
+.message-content-wrapper {
+    display: flex;
+    align-items: flex-end; /* Alinha o texto e o status na base */
+    gap: 8px; /* Espaço entre o texto e o status */
+    flex-grow: 1;
+    padding-right: 4px; 
+    padding-bottom: 2px;
+}
+
+/* Novo: Estilo para o span que envolve o texto puro */
+.message-text {
+    word-break: break-word;
+    white-space: pre-wrap;
+    flex-grow: 1; /* Permite que o texto ocupe o espaço necessário */
+    min-width: 0; /* Permite o encolhimento correto */
+}
+
+/* Status Wrapper: Garante que os elementos (Hora + Visto/Contador) fiquem agrupados */
+.status-wrapper {
+    display: flex;
+    align-items: center; 
+    flex-shrink: 0; /* Não permite que o wrapper de status encolha */
+    line-height: 1; /* Garante alinhamento vertical */
+    margin-left: auto; /* Empurra o status para a direita (dentro do message-content-wrapper) */
+    padding-left: 8px; /* Espaço entre o texto e o status */
+}
+
+
+/* Hora da Mensagem */
+.message-time{
+    font-size:10px;
+    color:#888;
+    white-space: nowrap;
+    margin-right: 4px; /* Espaço entre a hora e o visto */
+}
+
+/* Ticks de Confirmação de Leitura e Contador de Vistos */
+.message-status {
+    display: flex;
+    font-size: 14px; 
+    color: #888; 
+    line-height: 10px; 
+}
+
+/* Estilo para 2 Ticks Azuis (Lida) */
+.message-status.read {
+    color: #34B7F1;
+}
+
+/* Estilo para o Contador de Vistos (Chat Público) */
+.message-status .views-count {
+    font-size: 10px;
+    color: #bbb;
+    white-space: nowrap;
+}
+
+
 .chat-input{display:flex;padding:10px;background-color:#2C2C2C;border-top:1px solid #333;align-items:flex-end;}
 .chat-input textarea{flex:1;padding:10px;border-radius:25px;border:1px solid #333;outline:none;font-size:14px;background-color:#1E1E1E;color:#E1E1E1;resize:none;height:44px;}
+/* NOVO: Estilo para o botão de anexo */
+.chat-input #attachFileBtn {
+    background: #5C5C5C; 
+    color: #E1E1E1; 
+    border: none; 
+    padding: 10px 14px; 
+    margin-right: 8px; 
+    border-radius: 8px; 
+    cursor: pointer;
+    line-height: 1.2;
+}
 .chat-input button{background-color:#075E54;color:#E1E1E1;border:none;padding:10px 14px;margin-left:8px;border-radius:8px;cursor:pointer;}
 .typing-indicator{display:inline-block;width:10px;height:10px;border-radius:50%;background:yellow;margin-left:6px;animation:blink 1s infinite;}
 @keyframes blink{0%,50%,100%{opacity:0;}25%,75%{opacity:1;}}
 .small-note{font-size:12px;color:#bbb;text-align:center;padding:8px;}
-/* ---------- ABA DE PESQUISA ---------- */
 .search-bar{padding:10px;background-color:#1E1E1E;border-bottom:1px solid #333;}
 .search-bar input{width:100%;padding:8px 10px;border-radius:6px;border:1px solid #333;background-color:#2C2C2C;color:#E1E1E1;font-size:14px;}
-/* reply preview */
-#replyPreview{padding:8px 10px;border-left:3px solid #4a90e2;background:#161616;margin:8px;border-radius:6px;display:none;font-size:13px;color:#ddd}
-.reply-quoted{font-size:12px;color:#cfcfcf;opacity:0.9;margin-bottom:6px;}
+
+/* Estilo do REPLY PREVIEW na área de entrada */
+#replyPreview {
+    background: #1E1E1E;
+    border-radius: 12px 12px 0 0;
+    padding: 10px 14px; 
+    margin: 0 10px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.5); 
+}
+.reply-preview-content {
+    border-left: 4px solid; 
+    padding-left: 10px;
+    flex-grow: 1;
+}
+.reply-preview-content .reply-quoted-text {
+    font-size: 14px;
+    color: #bbb;
+}
+#cancelReply {
+    color: #888 !important;
+    font-size: 18px !important;
+}
+
+/* NOVO: Estilo para a Área de Pré-visualização de Ficheiro */
+#filePreview {
+    background: #1E1E1E;
+    border-radius: 12px 12px 0 0;
+    padding: 10px 14px; 
+    margin: 0 10px;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 -1px 4px rgba(0,0,0,0.5); /* Sombra para destacar */
+}
+
+.file-preview-content {
+    display: flex;
+    align-items: center;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.preview-image {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.preview-doc-icon {
+    font-size: 30px;
+    margin-right: 10px;
+    color: #FFD54F;
+    flex-shrink: 0;
+}
+
+.preview-details {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.preview-file-name {
+    font-size: 14px;
+    font-weight: bold;
+    color: #E1E1E1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.preview-file-size {
+    font-size: 12px;
+    color: #bbb;
+}
+
+#cancelFile {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 18px;
+    cursor: pointer;
+    margin-left: 10px;
+    padding: 5px;
+}
+
 .date-separator{align-self:center;background:#2a2a2a;color:#bbb;padding:6px 10px;border-radius:12px;font-size:12px;margin:10px 0}
-.mention{font-weight:bold;color:#FFD54F}
+.mention{font-weight:bold;color:#FFD54F;
+cursor:pointer;} 
 .suggestions{position:relative}
 .suggestions-list{position:absolute;bottom:52px;left:10px;background:#1b1b1b;border:1px solid #333;padding:6px;border-radius:6px;max-height:160px;overflow:auto;z-index:50}
 .suggestions-list div{padding:6px;border-radius:4px;cursor:pointer}
 .suggestions-list div:hover{background:#2a2a2a}
+.message a {
+    color: #FFD54F;
+    text-decoration: underline;
+    font-weight: bold;
+}
+
+/* Estilos para o Menu de Contexto */
+.context-menu {
+    position: fixed;
+    background: #2C2C2C;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    padding: 8px 0;
+    display: none;
+}
+.context-menu-item {
+    padding: 8px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #E1E1E1;
+}
+.context-menu-item:hover {
+    background: #3A3A3A;
+}
+/* Item de exclusão com cor de alerta */
+.context-menu-item.delete {
+    color: #FF5252;
+}
+
+/* Estilos para Formatação de Texto */
+.message strong {
+    font-weight: bolder;
+}
+.message em {
+    font-style: italic;
+}
+.message u {
+    text-decoration: underline; 
+    font-weight: bold;
+}
+
+/* NOVO: Estilos para Conteúdo de Ficheiros e Imagens */
+.file-content {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+}
+.file-image {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: zoom-in;
+}
+.file-doc {
+    display: flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.1s;
+    text-decoration: none;
+    color: inherit;
+    font-weight: bold;
+}
+.file-doc:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+.file-icon {
+    font-size: 24px;
+    margin-right: 8px;
+    color: #FFD54F;
+}
+.file-name {
+    flex-grow: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+.file-size {
+    font-size: 10px;
+    color: #bbb;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
 </style>
 </head>
 <body>
 <div class="container">
 
-<!-- LOGIN -->
 <div id="loginForm" class="form-container">
 <h2>Login</h2>
 <input type="email" id="loginEmail" placeholder="Email">
@@ -64,7 +382,6 @@ button:hover{background-color:#056162;}
 <div class="link" id="showRegisterLink">Criar conta</div>
 </div>
 
-<!-- REGISTRO -->
 <div id="registerForm" class="form-container" style="display:none;">
 <h2>Cadastro</h2>
 <input type="text" id="regName" placeholder="Nome de usuário">
@@ -72,21 +389,22 @@ button:hover{background-color:#056162;}
 <input type="password" id="regPassword" placeholder="Senha">
 <input type="text" id="regGroup" placeholder="Função (ex: Professor, Aluno, Zero Absoluto)">
 <button id="registerBtn">Cadastrar</button>
-<div class="link" id="showLoginLink">Já tem conta? Entrar</div>
+<div class="link" id="showLoginLink">Já tem conta?
+Entrar</div>
 <div class="small-note">Ao cadastrar com uma "Função" nova, a aba correspondente será criada automaticamente.</div>
 </div>
 
-<!-- CHAT -->
 <div class="whatsapp-container" id="whatsappApp">
 <div class="header">
 <span>Foundation Kaleosu</span>
-<div>
-<button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
-<button class="clear-chat" id="clearChatBtn">Apagar Chat</button>
+<div class="header-actions">
+    <button id="logoutBtn" style="background:none; color:#E1E1E1; font-size:14px; border:none; cursor:pointer;">Sair</button>
+    <button class="clear-local" id="clearLocalChatBtn" style="background:#5C5C5C; padding: 6px 10px; border-radius: 6px;"
+title="Apaga todas as mensagens apenas para você.">Limpar Histórico Local</button>
+    <button class="clear-chat" id="clearChatBtn" title="Apaga TODAS as mensagens do banco de dados (para todos os usuários)">Apagar Chat Global</button>
 </div>
 </div>
 
-<!-- 🔍 ABA DE PESQUISA ADICIONADA -->
 <div class="search-bar">
 <input type="text" id="searchInput" placeholder="Pesquisar contatos...">
 </div>
@@ -102,27 +420,43 @@ button:hover{background-color:#056162;}
 <button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
 </div>
 <div class="chat-messages" id="chatMessages"></div>
-<div id="replyPreview"></div>
+<div id="replyPreview" style="display:none;"></div>
+<div id="filePreview" style="display:none;"></div> 
 <div class="chat-input suggestions">
-<textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
-<div class="suggestions-list" id="suggestions" style="display:none"></div>
-<button id="sendMsgBtn">➤</button>
+    <input type="file" id="fileInput" style="display: none;" accept="image/*, application/pdf, .doc, .docx, .txt, audio/*, video/*">
+    
+    <button id="attachFileBtn" type="button" title="Anexar ficheiro">
+        📎
+    </button> 
+
+    <textarea id="messageInput" placeholder="Digite uma mensagem..."></textarea>
+    <div class="suggestions-list" id="suggestions" style="display:none"></div>
+    <button id="sendMsgBtn">➤</button>
 </div>
 </div>
 </div>
+</div>
+
+<div class="context-menu" id="messageContextMenu">
+    <div class="context-menu-item" id="contextReply">Responder</div>
+    <div class="context-menu-item delete" id="contextDeleteLocal">Apagar para mim</div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-import { getDatabase, ref, push, onChildAdded, onChildChanged, onChildRemoved, set, get, remove, onDisconnect, update } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
+import { getDatabase, ref as dbRef, push, onChildAdded, onChildChanged, onChildRemoved, set, get, remove, onDisconnect, update, onValue, increment, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
+// NOVO: Importar as funções do Storage
+import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
 
+// *** CONFIGURAÇÃO DO FIREBASE ***
+// IMPORTANTE: Insira aqui as suas configurações reais do Firebase
 const firebaseConfig = {
 apiKey: "AIzaSyBMr3KcqWq358YvERVBkSqzDsqHnqsBqCw",
 authDomain: "chat-publico-foundation.firebaseapp.com",
 databaseURL: "https://chat-publico-foundation-default-rtdb.firebaseio.com",
 projectId: "chat-publico-foundation",
-storageBucket: "chat-publico-foundation.appspot.com",
+storageBucket: "chat-publico-foundation.appspot.com", // VERIFIQUE SE ISTO ESTÁ CORRETO
 messagingSenderId: "1028294779813",
 appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
 };
@@ -130,47 +464,244 @@ appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
+// NOVO: Inicializar o Storage
+const storage = getStorage(app); 
 
+// MAPA DE CORES PARA NICKNAMES NO CHAT PÚBLICO
+const NICKNAME_COLORS = {
+    'Chat Público': '#EEFF00', 
+    'Fundador': '#FF7B00',
+    'Diretoria': '#820034',
+    'Overlord': '#470082',
+    'Alpha': '#969696',
+    'Zero Absoluto': '#BD0000',
+    'Bestas Fundadoras': '#008036',
+    'Mandamentos': '#000080',
+    'Reis Infernais': '#690000',
+    'Arcanjos': '#8BACAD',
+    'Famílias': '#804000',
+    'Comandante de Tropa': '#2B5C29',
+    'Força Tarefa Móvel': '#00337A',
+    'Guarda da Elite': 
+    '#D16500',
+    
+    'Professor': '#4BA300',
+    'Orientador': '#76FF21',
+    'Pesquisador': '#597544',
+    'Supervisor': '#667A5C',
+    'Agente de Campo': '#5E3869',
+    'Segurança': '#5C5C5C',
+    'Mediação': '#007D51',
+    'Colaborador': '#B52D00',
+    'Conselho Mágico': '#00347A',
+    'Representantes (Grunveler)': '#800020',
+    'Representantes (Kollob)': '#40E0D0',
+    'Outro': '#2196F3' // Default para 'Outro' e fallback
+};
 let currentUserName = '';
-let currentChat = 'Chat Público';
+let currentChat = 'public';
 let currentGroup = 'Chat Público';
 let messagesListenerUnsub = null;
 let usersListenerRefs = [];
 const userDomMap = {};
 let groupsMap = new Map();
 let typingTimeout = null;
-let replyTo = null; // store message being replied to
-let lastMessageDateMap = {}; // track last shown date per chat to render separators
+let replyTo = null;
+let lastMessageDateMap = {};
+let unreadListenerUnsub = null;
+let deletedMessages = {};
+let lastClearTimestamp = 0;
+let statusListeners = {}; 
 
-/* ---------- AUTENTICAÇÃO ---------- */
+/* ---------- FUNÇÕES AUXILIARES DE ESTADO DE FICHEIRO ---------- */
+
+/**
+ * Funções auxiliares para formatação de tamanho de ficheiro
+ */
+function formatFileSize(bytes, decimalPoint) {
+    if (bytes == 0) return '0 Bytes';
+    const k = 1000,
+        dm = decimalPoint || 2,
+        sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'],
+        i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+// NOVO: Ficheiro atualmente selecionado (temporário)
+let selectedFile = null;
+
+function cancelFile() {
+    selectedFile = null;
+    document.getElementById('fileInput').value = ''; // Limpa o input file
+    document.getElementById('filePreview').style.display = 'none';
+    document.getElementById('filePreview').innerHTML = '';
+    document.getElementById('messageInput').placeholder = "Digite uma mensagem...";
+    document.getElementById('messageInput').value = ''; // Opcional: Limpar legenda se houver
+}
+
+function showFilePreview(file) {
+    const previewEl = document.getElementById('filePreview');
+    const inputEl = document.getElementById('messageInput');
+    
+    if (!file) {
+        return cancelFile();
+    }
+
+    const fileSizeFormatted = formatFileSize(file.size);
+    const isImage = file.type.startsWith('image/');
+    
+    // Conteúdo base com o botão de cancelar
+    let baseHTML = `
+        <div class="file-preview-content" id="filePreviewContent">
+            </div>
+        <button id="cancelFile" type="button" title="Remover Ficheiro" onclick="cancelFile()">✖</button>
+    `;
+    previewEl.innerHTML = baseHTML;
+    
+    const contentTarget = document.getElementById('filePreviewContent');
+
+    if (isImage) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            contentTarget.innerHTML = `
+                <img src="${e.target.result}" class="preview-image" alt="Preview"/>
+                <div class="preview-details">
+                    <div class="preview-file-name">${file.name}</div>
+                    <div class="preview-file-size">${fileSizeFormatted} (Imagem)</div>
+                </div>
+            `;
+        };
+        reader.readAsDataURL(file);
+        
+        // Exibe um placeholder enquanto carrega
+         contentTarget.innerHTML = `
+            <div class="preview-doc-icon">🖼️</div>
+            <div class="preview-details">
+                <div class="preview-file-name">${file.name}</div>
+                <div class="preview-file-size">${fileSizeFormatted} (Carregando Imagem...)</div>
+            </div>
+        `;
+        
+    } else {
+        let icon = '📁'; 
+        let fileTypeLabel = 'Documento';
+        if (file.name.toLowerCase().endsWith('.pdf') || file.type.toLowerCase().endsWith('pdf')) { icon = '📄'; fileTypeLabel = 'PDF'; }
+        else if (file.type.startsWith('audio')) { icon = '🎧'; fileTypeLabel = 'Áudio'; }
+        else if (file.type.startsWith('video')) { icon = '🎬'; fileTypeLabel = 'Vídeo'; }
+        
+        contentTarget.innerHTML = `
+            <div class="preview-doc-icon">${icon}</div>
+            <div class="preview-details">
+                <div class="preview-file-name">${file.name}</div>
+                <div class="preview-file-size">${fileSizeFormatted} (${fileTypeLabel})</div>
+            </div>
+        `;
+    }
+
+    inputEl.placeholder = `Adicione uma legenda para ${file.name} ou envie...`;
+    previewEl.style.display = 'flex';
+    
+    // Anexa o listener de clique no botão de cancelar (o inline onclick no template só funciona se 'cancelFile' for global)
+    document.getElementById('cancelFile').onclick = cancelFile;
+}
+
+// NOVO: Listener de mudança no input file
+document.getElementById('fileInput').addEventListener('change', (event) => {
+    selectedFile = event.target.files[0];
+    showFilePreview(selectedFile);
+});
+
+/* ---------- FUNÇÕES AUXILIARES DE EXCLUSÃO LOCAL (Mantidas) ---------- */
+function loadLocalChatState() {
+    if (!auth.currentUser) return;
+    try {
+        const storedDeleted = localStorage.getItem('deletedMessages_' + auth.currentUser.uid);
+        deletedMessages = storedDeleted ?
+        JSON.parse(storedDeleted) : {};
+
+        const storedTimestamp = localStorage.getItem('lastClearTimestamp_' + auth.currentUser.uid);
+        lastClearTimestamp = storedTimestamp ? parseInt(storedTimestamp, 10) : 0;
+    } catch (e) {
+        console.error("Erro ao carregar estado local do chat:", e);
+    }
+}
+
+function deleteMessageLocal(msgId) {
+    if (!msgId) return;
+    const el = document.querySelector(`.message-container[data-msg-id="${msgId}"]`);
+    if (el) {
+        el.remove();
+    }
+
+    deletedMessages[msgId] = true;
+    try {
+        localStorage.setItem('deletedMessages_' + auth.currentUser.uid, JSON.stringify(deletedMessages));
+    } catch (e) {
+        console.error("Erro ao salvar mensagem excluída localmente:", e);
+    }
+}
+
+function clearAllMessagesLocal() {
+    if (!auth.currentUser) return;
+
+    if (!confirm("Tem certeza que deseja limpar todo o histórico de mensagens localmente (isto não afeta o Firebase)?")) {
+        return;
+    }
+
+    const newTimestamp = Date.now();
+    deletedMessages = {};
+    try {
+        localStorage.removeItem('deletedMessages_' + auth.currentUser.uid);
+    } catch (e) {
+        console.error("Erro ao limpar exclusões individuais:", e);
+    }
+
+    try {
+        localStorage.setItem('lastClearTimestamp_' + auth.currentUser.uid, newTimestamp.toString());
+        lastClearTimestamp = newTimestamp;
+    } catch (e) {
+        console.error("Erro ao salvar timestamp local:", e);
+    }
+    
+    alert('Histórico local limpo. Recarregando chat...');
+    openChat(currentChat, document.getElementById('chatHeader').innerText);
+}
+
+
+/* ---------- AUTENTICAÇÃO (Mantido) ---------- */
 onAuthStateChanged(auth, async user => {
 if(user){
-const snap = await get(ref(db,'users/'+user.uid));
+const snap = await get(dbRef(db,'users/'+user.uid));
 currentUserName = snap.exists()? snap.val().name || 'Usuário':'Usuário';
 document.getElementById('loginForm').style.display='none';
 document.getElementById('registerForm').style.display='none';
 document.getElementById('whatsappApp').style.display='flex';
 
-// Reset mapas e listeners
+loadLocalChatState(); 
+
 groupsMap = new Map();
 Object.keys(userDomMap).forEach(k=>delete userDomMap[k]);
 usersListenerRefs.forEach(unsub=>unsub && unsub());
 usersListenerRefs = [];
+if(unreadListenerUnsub) unreadListenerUnsub(); 
 
-const userStatusRef = ref(db,'users/'+user.uid+'/status');
+const userStatusRef = dbRef(db,'users/'+user.uid+'/status');
 await set(userStatusRef,'online');
 onDisconnect(userStatusRef).set('offline');
 
-setupContactsRealtime();
+await setupContactsRealtime();
+setupUnreadListener(); 
+
 showTab('Chat Público');
-openChat('Chat Público','Chat Público');
+openChat('public','Chat Público'); 
 } else {
+if(unreadListenerUnsub) unreadListenerUnsub();
 document.getElementById('whatsappApp').style.display='none';
 document.getElementById('loginForm').style.display='flex';
 }
 });
 
-/* ---------- LOGIN / CADASTRO ---------- */
+/* ---------- LOGIN / CADASTRO / LOGOUT (Mantido) ---------- */
 function showRegister(){document.getElementById('loginForm').style.display='none'; document.getElementById('registerForm').style.display='flex';}
 function showLogin(){document.getElementById('loginForm').style.display='flex'; document.getElementById('registerForm').style.display='none';}
 
@@ -179,10 +710,11 @@ const name=document.getElementById('regName').value.trim();
 const email=document.getElementById('regEmail').value.trim();
 const password=document.getElementById('regPassword').value;
 const userGroup=document.getElementById('regGroup').value.trim() || 'Outro';
-if(!name || !email || !password){ alert('Preencha todos os campos!'); return; }
+if(!name || !email || !password){ alert('Preencha todos os campos!'); return;
+}
 try {
 const cred = await createUserWithEmailAndPassword(auth,email,password);
-await set(ref(db,'users/'+cred.user.uid),{ name,email,userGroup,status:'offline',createdAt:Date.now() });
+await set(dbRef(db,'users/'+cred.user.uid),{ name,email,userGroup,status:'offline',createdAt:Date.now() });
 alert(`Usuário "${name}" criado na função "${userGroup}". Faça login.`);
 showLogin();
 } catch(err){alert(err.message || String(err));}
@@ -196,104 +728,129 @@ try{await signInWithEmailAndPassword(auth,email,password);} catch(err){alert(err
 
 function logout(){
 if(!auth.currentUser) return;
-update(ref(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
+update(dbRef(db,'users/'+auth.currentUser.uid),{status:'offline'}).finally(()=>signOut(auth));
 }
 
-/* ---------- CONTATOS E GRUPOS ---------- */
-function setupContactsRealtime(){
-const contactsList = document.getElementById('contactsListContent');
-contactsList.innerHTML='';
+/* ---------- CONTATOS E GRUPOS (Mantido) ---------- */
+async function setupContactsRealtime(){
+    const contactsList = document.getElementById('contactsListContent');
+    contactsList.innerHTML='';
+    const myUid = auth.currentUser.uid;
 
-function createGroupIfNeeded(groupName){
-if(groupsMap.has(groupName)) return groupsMap.get(groupName);
-const contentDiv = document.createElement('div'); contentDiv.className='tab-content';
-contactsList.appendChild(contentDiv);
-const obj = { contentDiv, users: [] }; groupsMap.set(groupName,obj);
-sortGroups();
-updateGroupSelect();
-return obj;
+    function createGroupIfNeeded(groupName){
+        if(groupsMap.has(groupName)) return groupsMap.get(groupName);
+        const contentDiv = document.createElement('div');
+        contentDiv.className='tab-content';
+        contactsList.appendChild(contentDiv);
+        const obj = { contentDiv, users: [] }; groupsMap.set(groupName,obj);
+        sortGroups();
+        updateGroupSelect();
+        return obj;
+    }
+
+    function sortGroups(){
+        const sorted = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b));
+        sorted.forEach(name=>{
+            const obj = groupsMap.get(name);
+            contactsList.appendChild(obj.contentDiv);
+        });
+    }
+
+    function sortUsers(groupName){
+        const group = groupsMap.get(groupName);
+        if(!group) return;
+        group.users.sort((a,b)=>a.dataset.name.localeCompare(b.dataset.name));
+        group.users.forEach(userEl=>group.contentDiv.appendChild(userEl));
+    }
+    
+    function getPrivateChatId(uid1, uid2) {
+        return uid1 < uid2 ?
+        `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    }
+
+    function createPublicChatContact(){
+        const groupDom = createGroupIfNeeded('Chat Público');
+        if(!groupDom) return;
+        const CHAT_ID = 'public'; 
+        const div=document.createElement('div'); div.className='contact'; div.dataset.chatid=CHAT_ID; div.dataset.name='Chat Público';
+        div.innerHTML = `<div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-${CHAT_ID}"></div>`;
+        div.addEventListener('click',()=>{openChat(CHAT_ID,'Chat Público'); resetUnread(CHAT_ID);}); 
+        groupDom.contentDiv.appendChild(div);
+        groupDom.users.push(div);
+        sortUsers('Chat Público');
+    }
+
+    function addOrUpdateUser(uid,userObj){
+        if(!userObj) return; 
+        if(uid===myUid) return;
+        const group = userObj.userGroup || 'Outro';
+        const groupDom = createGroupIfNeeded(group);
+        const chatId = getPrivateChatId(myUid, uid);
+        if(userDomMap[uid]){
+            const prev = userDomMap[uid];
+            const el=prev.el;
+            if(prev.group !== group){
+                try{prev.el.remove();}catch(e){}
+                const newEl=createUserElement(uid,userObj, chatId);
+                groupDom.contentDiv.appendChild(newEl);
+                groupDom.users.push(newEl);
+                sortUsers(group);
+                userDomMap[uid]={el:newEl,group,chatId};
+            } else{
+                const nameDiv=el.querySelector('.name');
+                if(nameDiv) nameDiv.innerText=userObj.name||'Usuário';
+                const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
+            }
+        } else{
+            const el=createUserElement(uid,userObj, chatId);
+            groupDom.contentDiv.appendChild(el);
+            groupDom.users.push(el);
+            sortUsers(group);
+            userDomMap[uid]={el,group,chatId};
+        }
+        updateGroupSelect();
+    }
+
+    function createUserElement(uid,userObj, chatId){
+        const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.chatid=chatId; div.dataset.name=userObj.name||'Usuário';
+        const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
+        const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
+        div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${chatId}"></div>`;
+        div.addEventListener('click',()=>{
+            openChat(chatId,userObj.name||'Usuário'); 
+            resetUnread(chatId); 
+        });
+        return div;
+    }
+
+    function removeUser(uid){const stored=userDomMap[uid];
+    if(stored && stored.el){
+        try{stored.el.remove();}catch(e){}
+        const group = groupsMap.get(stored.group);
+        if(group){group.users = group.users.filter(u=>u!==stored.el);}
+        delete userDomMap[uid];
+        updateGroupSelect();
+    }}
+
+    // --- CARREGAMENTO SINCRONIZADO DE DADOS INICIAIS ---
+    createPublicChatContact();
+    const usersSnapshot = await get(dbRef(db, 'users'));
+    if (usersSnapshot.exists()) {
+        Object.keys(usersSnapshot.val()).forEach(uid => {
+            if (uid !== myUid) {
+                addOrUpdateUser(uid, usersSnapshot.val()[uid]); 
+            }
+        });
+    }
+
+    // --- LISTENERS DE MUDANÇAS FUTURAS (onChildAdded, onChildChanged, etc.) ---
+    const usersRef = dbRef(db,'users');
+    usersListenerRefs.push(onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+    usersListenerRefs.push(onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
+    usersListenerRefs.push(onChildRemoved(usersRef,snap=>removeUser(snap.key)));
 }
 
-function sortGroups(){
-const sorted = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b));
-sorted.forEach(name=>{
-const obj = groupsMap.get(name);
-contactsList.appendChild(obj.contentDiv);
-});
-}
-
-function sortUsers(groupName){
-const group = groupsMap.get(groupName);
-if(!group) return;
-group.users.sort((a,b)=>a.dataset.name.localeCompare(b.dataset.name));
-group.users.forEach(userEl=>group.contentDiv.appendChild(userEl));
-}
-
-function createPublicChatContact(){
-const groupDom = createGroupIfNeeded('Chat Público'); if(!groupDom) return;
-const div=document.createElement('div'); div.className='contact'; div.dataset.uid='public'; div.dataset.name='Chat Público';
-div.innerHTML = `<div class="avatar">🌐<div class="status-dot" style="background-color:green"></div></div><div class="name">Chat Público</div><div class="unread-count" id="unread-public"></div>`;
-div.addEventListener('click',()=>{openChat('Chat Público','Chat Público'); resetUnread('Chat Público');});
-groupDom.contentDiv.appendChild(div);
-groupDom.users.push(div);
-sortUsers('Chat Público');
-}
-createPublicChatContact();
-
-function addOrUpdateUser(uid,userObj){
-if(!userObj) return; if(uid===auth.currentUser?.uid) return;
-const group = userObj.userGroup || 'Outro';
-const groupDom = createGroupIfNeeded(group);
-if(userDomMap[uid]){
-const prev = userDomMap[uid]; const el=prev.el;
-if(prev.group !== group){
-try{prev.el.remove();}catch(e){}
-const newEl=createUserElement(uid,userObj);
-groupDom.contentDiv.appendChild(newEl);
-groupDom.users.push(newEl);
-sortUsers(group);
-userDomMap[uid]={el:newEl,group};
-} else{
-const nameDiv=el.querySelector('.name'); if(nameDiv) nameDiv.innerText=userObj.name||'Usuário';
-const dot=el.querySelector('.status-dot'); if(dot) dot.style.backgroundColor=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
-}
-} else{
-const el=createUserElement(uid,userObj); groupDom.contentDiv.appendChild(el);
-groupDom.users.push(el);
-sortUsers(group);
-userDomMap[uid]={el,group};
-}
-updateGroupSelect();
-}
-
-function createUserElement(uid,userObj){
-const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.name=userObj.name||'Usuário';
-const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
-const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
-div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${uid}"></div>`;
-div.addEventListener('click',()=>{
-const myUid=auth.currentUser.uid; const otherUid=uid;
-const chatId=myUid<otherUid?`${myUid}_${otherUid}`:`${otherUid}_${myUid}`;
-openChat(chatId,userObj.name||'Usuário'); resetUnread(uid);
-});
-return div;
-}
-
-function removeUser(uid){const stored=userDomMap[uid]; if(stored && stored.el){
-try{stored.el.remove();}catch(e){}
-const group = groupsMap.get(stored.group);
-if(group){group.users = group.users.filter(u=>u!==stored.el);}
-delete userDomMap[uid];
-updateGroupSelect();
-}}
-
-const usersRef = ref(db,'users');
-usersListenerRefs.push(onChildAdded(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
-usersListenerRefs.push(onChildChanged(usersRef,snap=>addOrUpdateUser(snap.key,snap.val())));
-usersListenerRefs.push(onChildRemoved(usersRef,snap=>removeUser(snap.key)));
-}
-
-/* ---------- SELECT BOX ---------- */
+/* ---------- SELECT BOX / PESQUISA / CONTADOR (Mantido) ---------- */
 function updateGroupSelect(){
 const select = document.getElementById('groupSelect');
 select.innerHTML='';
@@ -301,17 +858,16 @@ const sortedGroups = Array.from(groupsMap.keys()).sort((a,b)=>a.localeCompare(b)
 sortedGroups.forEach(groupName=>{
 const option = document.createElement('option'); option.value=groupName; option.innerText=groupName; select.appendChild(option);
 });
-select.value = currentChat;
+select.value = currentGroup;
 }
 
 function showTab(groupName){groupsMap.forEach((v,key)=>{v.contentDiv.style.display=(key===groupName)?'block':'none';});
-currentChat = groupName;
+currentGroup = groupName;
 updateGroupSelect();
 }
 
 document.getElementById('groupSelect').addEventListener('change',(e)=>{showTab(e.target.value);});
 
-/* ---------- PESQUISA DE CONTATOS ---------- */
 document.getElementById('searchInput').addEventListener('input', e => {
 const query = e.target.value.toLowerCase();
 Object.values(userDomMap).forEach(({ el }) => {
@@ -319,199 +875,722 @@ const name = el.dataset.name.toLowerCase();
 el.style.display = name.includes(query) ? 'flex' : 'none';
 });
 });
-
-/* ---------- CONTADOR DE MENSAGENS ---------- */
-function getOtherUserIdFromChat(chatId){
-if(!auth.currentUser) return null;
-if(chatId==='Chat Público') return 'public';
-const parts = chatId.split('_');
-if(parts.length!==2) return chatId;
-const a=parts[0], b=parts[1];
-return (a===auth.currentUser.uid)?b: (b===auth.currentUser.uid)?a : chatId; // return other uid if current user is participant
+function updateUnreadUI(chatId, count){
+    const unreadDiv = document.getElementById(`unread-${chatId}`);
+    if(!unreadDiv) return;
+    if(count && count > 0){
+        unreadDiv.innerText = count > 99 ?
+        '99+' : count;
+        unreadDiv.style.display = 'flex'; 
+    } else {
+        unreadDiv.innerText = '';
+        unreadDiv.style.display = 'none';
+    }
 }
 
-function incrementUnread(chatId){
-const target = getOtherUserIdFromChat(chatId);
-const unreadDivId = (target==='Chat Público' || target==='public')? 'unread-public' : 'unread-'+target;
-const unreadDiv = document.getElementById(unreadDivId);
-if(!unreadDiv) return;
-let count = parseInt(unreadDiv.innerText||'0')+1;
-unreadDiv.innerText = count;
-unreadDiv.style.display = 'block';
+function setupUnreadListener(){
+    if(!auth.currentUser) return;
+    const unreadRef = dbRef(db, `unreads/${auth.currentUser.uid}`);
+    unreadListenerUnsub = onValue(unreadRef, (snapshot) => {
+        const unreads = snapshot.val();
+        
+        const allUnreadDivs = document.querySelectorAll('.unread-count');
+        allUnreadDivs.forEach(div => {
+            const id = div.id.replace('unread-', '');
+            if (!unreads || !unreads[id]) {
+                updateUnreadUI(id, 0);
+      
+            }
+        });
+
+        if(unreads){
+            Object.keys(unreads).forEach(chatId => {
+                updateUnreadUI(chatId, unreads[chatId]);
+            });
+        }
+    });
 }
+
 function resetUnread(chatId){
-const target = (chatId==='Chat Público')? 'public' : chatId;
-const unreadDivId = (target==='Chat Público' || target==='public')? 'unread-public' : 'unread-'+target;
-const unreadDiv = document.getElementById(unreadDivId);
-if(!unreadDiv) return;
-unreadDiv.innerText='';
-unreadDiv.style.display='none';
+    if(!auth.currentUser) return;
+    remove(dbRef(db, `unreads/${auth.currentUser.uid}/${chatId}`));
 }
 
-/* ---------- CHAT ---------- */
+
+/* ---------- CHAT (COM CORREÇÃO DE LEITURA E TICKS) ---------- */
+function scrollToBottom(){
+    const chatMessagesDiv = document.getElementById('chatMessages');
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+}
+
 function openChat(chatId,chatName){
-currentChat=chatId; document.getElementById('chatHeader').innerText=chatName;
+currentChat=chatId; 
+document.getElementById('chatHeader').innerText=chatName;
 document.getElementById('contactsListContent').parentElement.style.display='none';
 document.getElementById('chat').style.display='flex';
 document.getElementById('chatMessages').innerHTML='';
-document.getElementById('replyPreview').style.display='none'; replyTo=null; lastMessageDateMap[chatId]=null;
-resetUnread(chatId);
+document.getElementById('replyPreview').style.display='none'; 
+document.getElementById('filePreview').style.display='none'; // NOVO: Limpa o preview do ficheiro
+cancelFile(); // Garante o estado limpo
+replyTo=null;
+lastMessageDateMap[chatId]=null;
+// Limpa todos os listeners de status de mensagens anteriores
+Object.values(statusListeners).forEach(unsub => unsub());
+statusListeners = {};
 
-if(messagesListenerUnsub) messagesListenerUnsub();
-const messagesRef=ref(db,'messages');
-messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
-const msg = snap.val(); if(!msg) return;
-// if message belongs to this chat (public OR private) render, else increment unread
-if(msg.chat===currentChat || (currentChat==='Chat Público' && msg.chat==='Chat Público')) {
-renderMessage(msg);
-} else {
-// if the incoming message is private and doesn't involve current user, ignore
-if(msg.chat && msg.chat.includes('_')){
-const other = getOtherUserIdFromChat(msg.chat);
-// increment unread only if current user is part of chat
-if(other && other!==msg.user && (msg.chat.includes(auth.currentUser.uid))) incrementUnread(msg.chat);
-} else {
-incrementUnread(msg.chat);
-}
-}
+resetUnread(chatId); 
+
+const myUid = auth.currentUser.uid;
+const isPublic = chatId === 'public';
+const chatPath = isPublic ? 'Chat Público' : chatId;
+// *** CORREÇÃO: Marca mensagens como Lidas/Vistas quando o chat é aberto ***
+// Otimização: usa 'get' com limite para buscar as últimas mensagens e marcá-las como lidas.
+const messagesRef = dbRef(db,'messages');
+
+get(query(messagesRef, limitToLast(50))).then((snapshot) => {
+    if (!snapshot.exists()) return;
+
+    const updates = {};
+    snapshot.forEach(snap => {
+        const msg = snap.val();
+        const messageId = snap.key;
+        
+        if ((msg.chat === chatPath) && msg.user !== myUid) {
+            
+            const deliveredPath = `readReceipts/${chatId}/${messageId}/delivered/${myUid}`;
+ 
+            const readPath = `readReceipts/${chatId}/${messageId}/read/${myUid}`;
+            
+            // Marca como entregue e lido se ainda não estiver (a verificação exata é feita pelo update em lote)
+            updates[deliveredPath] = true;
+            updates[readPath] = Date.now(); 
+        }
+    });
+
+   
+    if(Object.keys(updates).length > 0) {
+        update(dbRef(db), updates);
+    }
+}).catch(error => {
+    console.error("Erro ao marcar mensagens como lidas:", error);
 });
+if(messagesListenerUnsub) messagesListenerUnsub();
+messagesListenerUnsub = onChildAdded(messagesRef,snap=>{
+    const msg = snap.val(); if(!msg) return;
+
+    if(msg.chat===chatPath) {
+        renderMessage(snap, msg); 
+    } 
+});
+setTimeout(scrollToBottom, 200);
+}
+
+// *** NOVO: Função para monitorar o status de leitura da mensagem ***
+function setupMessageStatusListener(messageId, statusDiv, myUid, chatId) {
+    const isPublic = chatId === 'public';
+    const receiptsRef = dbRef(db, `readReceipts/${chatId}/${messageId}`);
+
+    if (statusListeners[messageId]) {
+        statusListeners[messageId]();
+        delete statusListeners[messageId];
+    }
+    
+    // Listener em tempo real para o status da mensagem
+    const unsubscribe = onValue(receiptsRef, (snapshot) => {
+        const receipts = snapshot.val() || {};
+        
+        // deliveredCount: Quantos usuários receberam (inclui o remetente)
+        const deliveredCount = receipts.delivered ? Object.keys(receipts.delivered).length : 0;
+        // readCount: Quantos usuários leram (inclui o remetente)
+       
+        const readCount = receipts.read ? Object.keys(receipts.read).length : 0;
+        
+        statusDiv.innerHTML = ''; 
+
+        if (isPublic) {
+            // Lógica do Chat Público: Contador de Vistos
+            // views: Número de usuários além do remetente que leram.
+            const views = readCount > 0 ? readCount - 1 : 
+            0;
+            
+            statusDiv.className = 'message-status';
+            statusDiv.innerHTML = `<span class="views-count">${views} vistos</span>`; 
+        } else {
+            // Lógica do Chat Privado (Ticks)
+            let tickHTML = '✓'; // 1. Tick cinza (enviado ao Firebase)
+            let statusClass = '';
+            // 2. Dois ticks cinzas (entregue ao destinatário - deliveredCount > 1)
+            if (deliveredCount > 1) {
+                tickHTML = '✓✓';
+            }
+            // 3. Dois ticks azuis (lido pelo destinatário - readCount > 1)
+            if (readCount > 1) {
+                tickHTML = '✓✓';
+                statusClass = 'read';
+            }
+            statusDiv.className = `message-status ${statusClass}`;
+            statusDiv.innerHTML = tickHTML;
+        }
+    });
+    statusListeners[messageId] = unsubscribe;
 }
 
 function formatDateSeparator(date){
-const d = new Date(date);
-const today = new Date();
-const diff = Math.floor((new Date(today.getFullYear(),today.getMonth(),today.getDate()) - new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000);
-if(diff===0) return 'Hoje';
-if(diff===1) return 'Ontem';
-return d.toLocaleDateString('pt-BR');
+    const d = new Date(date); 
+    const today = new Date();
+    const diff = Math.floor((new Date(today.getFullYear(),today.getMonth(),today.getDate()) - new Date(d.getFullYear(),d.getMonth(),d.getDate()))/86400000); 
+    if(diff===0) return 'Hoje'; 
+    if(diff===1) return 'Ontem'; 
+    return d.toLocaleDateString('pt-BR');
 }
 
-function renderMessage(msg){
-const chatMessagesDiv=document.getElementById('chatMessages');
-// date separator logic
-const lastDate = lastMessageDateMap[msg.chat] || null;
-const thisDay = new Date(msg.timestamp||Date.now());
-const thisDayKey = `${thisDay.getFullYear()}-${thisDay.getMonth()+1}-${thisDay.getDate()}`;
-if(lastDate !== thisDayKey){
-const sep = document.createElement('div'); sep.className='date-separator'; sep.innerText = formatDateSeparator(msg.timestamp||Date.now());
-chatMessagesDiv.appendChild(sep);
-lastMessageDateMap[msg.chat] = thisDayKey;
+function startPrivateChat(uid, name){
+    const myUid = auth.currentUser.uid;
+    const getPrivateChatId = (uid1, uid2) => uid1 < uid2 ?
+    `${uid1}_${uid2}` : `${uid2}_${uid1}`;
+    const otherUid = uid;
+    const chatId = getPrivateChatId(myUid, otherUid);
+    openChat(chatId, name);
 }
 
-const wasAtBottom = (chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight) < 80;
+/**
+ * Função principal para mostrar o menu de contexto da mensagem.
+ */
+function showContextMenu(e, msgId, isSent, msg) {
+    e.preventDefault();
+    const menu = document.getElementById('messageContextMenu');
+    // Posiciona o menu no local do clique
+    menu.style.left = `${e.clientX}px`;
+    menu.style.top = `${e.clientY}px`;
+    menu.style.display = 'block';
 
-const container=document.createElement('div'); container.className='message-container '+(msg.user===auth.currentUser?.uid?'sent':'received');
-container.dataset.msgId = msg.id || '';
+    // Oculta o menu ao clicar em qualquer lugar fora dele
+    function hideMenu() {
+        menu.style.display = 'none';
+        document.removeEventListener('click', hideMenu);
+    }
+    setTimeout(() => { document.addEventListener('click', hideMenu); }, 100);
 
-if(msg.user!==auth.currentUser?.uid){
-const sender=document.createElement('div'); sender.className='sender-name'; sender.innerText=msg.username||'Usuário'; container.appendChild(sender);
-if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);} 
+    // Configura o botão Responder
+    const replyItem = document.getElementById('contextReply');
+    replyItem.onclick = () => {
+        const textToReply = msg.text || (msg.file ? `[Ficheiro: ${msg.file.name}]` : '');
+        if(!textToReply) return; // Não permite resposta a mensagens sem texto/ficheiro
+        replyTo = { id: msgId, text: textToReply, username: msg.username, user: msg.user };
+        showReplyPreview(replyTo);
+        hideMenu();
+    };
+
+    // Configura o botão Apagar para mim
+    const deleteItem = document.getElementById('contextDeleteLocal');
+    deleteItem.style.display = 'block';
+    deleteItem.onclick = () => {
+        if (confirm("Tem certeza que deseja apagar esta mensagem APENAS para você?")) {
+            deleteMessageLocal(msgId);
+            hideMenu();
+        }
+    };
 }
 
-// if message is a reply
-if(msg.reply && msg.reply.text){
-const quoted=document.createElement('div'); quoted.className='reply-quoted'; quoted.innerText = `${msg.reply.username||'Usuário'}: ${msg.reply.text.length>120?msg.reply.text.slice(0,117)+'...':msg.reply.text}`;
-container.appendChild(quoted);
+
+/**
+ * Lógica para renderizar conteúdo de ficheiro (imagem ou documento)
+ */
+function renderFileContent(fileData) {
+    const fileContainer = document.createElement('div');
+    fileContainer.className = 'file-content';
+    
+    // Se for Imagem
+    if (fileData.isImage) {
+        const img = document.createElement('img');
+        img.className = 'file-image';
+        img.src = fileData.url;
+        img.alt = fileData.name;
+        // Opcional: Adicionar funcionalidade de zoom ou lightbox
+        img.onclick = () => window.open(fileData.url, '_blank'); 
+        fileContainer.appendChild(img);
+    } 
+    // Se for Documento (PDF, DOC, etc.)
+    else {
+        const docLink = document.createElement('a');
+        docLink.className = 'file-doc';
+        docLink.href = fileData.url;
+        docLink.target = '_blank';
+        docLink.title = `Clique para baixar: ${fileData.name}`;
+
+        const icon = document.createElement('span');
+        icon.className = 'file-icon';
+        // Icone baseado no tipo (usando emojis como fallback simples)
+        if (fileData.name.toLowerCase().endsWith('.pdf') || fileData.type.toLowerCase().endsWith('pdf')) {
+            icon.innerText = '📄'; 
+        } else if (fileData.type.startsWith('audio')) {
+            icon.innerText = '🎧'; 
+        } else if (fileData.type.startsWith('video')) {
+            icon.innerText = '🎬'; 
+        } else {
+            icon.innerText = '📁'; 
+        }
+        
+        const nameEl = document.createElement('span');
+        nameEl.className = 'file-name';
+        nameEl.innerText = fileData.name;
+
+        const sizeEl = document.createElement('span');
+        sizeEl.className = 'file-size';
+        sizeEl.innerText = formatFileSize(fileData.size);
+
+        docLink.appendChild(icon);
+        docLink.appendChild(nameEl);
+        docLink.appendChild(sizeEl);
+        
+        fileContainer.appendChild(docLink);
+    }
+
+    return fileContainer;
 }
 
-const txt=document.createElement('div'); txt.className='message '+(msg.user===auth.currentUser?.uid?'sent':'received');
-// highlight mentions
-let displayed = msg.text||'';
-if(msg.mentions && Array.isArray(msg.mentions) && msg.mentions.includes(auth.currentUser?.uid)){
-displayed = displayed.replace(new RegExp(`@${auth.currentUser?.displayName || currentUserName}`,'g'), `<span class="mention">@${currentUserName}</span>`);
+// *** FUNÇÃO DE RENDERIZAÇÃO DA MENSAGEM (COM NOVO PROCESSAMENTO DE FORMATAÇÃO E FICHEIROS) ***
+function renderMessage(snap, msg){
+    const chatMessagesDiv=document.getElementById('chatMessages');
+    const myUid = auth.currentUser.uid; 
+    const isSent = msg.user === myUid; 
+    const messageId = snap.key;
+    
+    // FILTROS: Verifica se foi excluída individualmente ou se é anterior à limpeza total 
+    if (deletedMessages[messageId] || (msg.timestamp < lastClearTimestamp)) { 
+        return;
+    }
+    
+    // Lógica do separador de data 
+    const lastDate = lastMessageDateMap[msg.chat] || null; 
+    const thisDay = new Date(msg.timestamp||Date.now());
+    const thisDayKey = `${thisDay.getFullYear()}-${thisDay.getMonth()+1}-${thisDay.getDate()}`; 
+    if(lastDate !== thisDayKey){ 
+        const sep = document.createElement('div'); 
+        sep.className='date-separator'; 
+        sep.innerText = formatDateSeparator(msg.timestamp||Date.now()); 
+        chatMessagesDiv.appendChild(sep); 
+        lastMessageDateMap[msg.chat] = thisDayKey;
+    } 
+    const wasAtBottom = (chatMessagesDiv.scrollHeight - chatMessagesDiv.scrollTop - chatMessagesDiv.clientHeight) < 80; 
+    const container=document.createElement('div'); 
+    container.className='message-container '+(isSent?'sent':'received'); 
+    container.dataset.msgId = messageId;
+    
+    // Listener para o menu de contexto (botão direito e toque longo) 
+    container.addEventListener('contextmenu', (e) => { showContextMenu(e, messageId, isSent, msg); });
+    let touchTimer; 
+    container.addEventListener('touchstart', (e) => { touchTimer = setTimeout(() => { showContextMenu(e, messageId, isSent, msg); }, 700); }, false);
+    container.addEventListener('touchend', () => { clearTimeout(touchTimer); }); 
+    container.addEventListener('touchmove', () => { clearTimeout(touchTimer); }); 
+    
+    // Nome do remetente 
+    if(!isSent){ 
+        const sender=document.createElement('div'); 
+        sender.className='sender-name';
+        sender.innerText=msg.username||'Usuário'; 
+        if(currentChat === 'public'){ 
+            let senderUserObj = null; 
+            for(const uid in userDomMap) { 
+                if(msg.user === uid) { 
+                    senderUserObj = userDomMap[uid];
+                    break; 
+                } 
+            } 
+            if(senderUserObj && senderUserObj.group){ 
+                const color = NICKNAME_COLORS[senderUserObj.group] || NICKNAME_COLORS['Outro']; 
+                sender.style.color = color;
+            } else { 
+                sender.style.color = NICKNAME_COLORS['Outro']; 
+            } 
+        } 
+        container.appendChild(sender); 
+        if(msg.status==='typing'){const typing=document.createElement('span'); typing.className='typing-indicator'; sender.appendChild(typing);} 
+    } 
+    
+    const txt=document.createElement('div'); 
+    txt.className='message '+(isSent?'sent':'received');
+    
+    // Adiciona o reply-box se for uma resposta 
+    if(msg.reply && msg.reply.text){ 
+        const replyBox = document.createElement('div'); 
+        replyBox.className = 'reply-box';
+        const WA_GREEN = '#40C351'; 
+        const quotedName = msg.reply.user === myUid ? 'Você' : (msg.reply.username || 'Usuário'); 
+        const bar = document.createElement('div');
+        bar.className = 'reply-bar-color';
+        bar.style.backgroundColor = WA_GREEN;
+        const content = document.createElement('div'); 
+        content.style.flexGrow = 1; 
+        const nameEl = document.createElement('div'); 
+        nameEl.className = 'reply-quoted-name';
+        nameEl.innerText = quotedName; 
+        nameEl.style.color = WA_GREEN; 
+        const textEl = document.createElement('div'); 
+        textEl.className = 'reply-quoted-text'; 
+        textEl.innerText = msg.reply.text.length > 80 ?
+        msg.reply.text.slice(0, 77) + '...' : msg.reply.text; 
+        
+        content.appendChild(nameEl); 
+        content.appendChild(textEl); 
+        replyBox.appendChild(bar); 
+        replyBox.appendChild(content); 
+        txt.appendChild(replyBox);
+    }
+    
+    // --- Lógica de RENDERIZAÇÃO do CONTEÚDO (FICHEIRO/TEXTO) ---
+    
+    // NOVO: Renderiza o conteúdo do ficheiro se existir
+    if (msg.file) {
+        const fileContentEl = renderFileContent(msg.file);
+        txt.appendChild(fileContentEl);
+    }
+    
+    const contentWrapper = document.createElement('div'); 
+    contentWrapper.className = 'message-content-wrapper'; 
+    
+    const messageText = document.createElement('span');
+    messageText.className = 'message-text';
+
+    let displayedText = msg.text || '';
+    
+    // Se a mensagem for APENAS um ficheiro sem texto, oculta o span de texto (mas mantém o wrapper para o status)
+    if (!displayedText && msg.file) {
+        messageText.style.display = 'none';
+        contentWrapper.style.paddingBottom = '0px'; 
+    }
+
+    function escapeHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+    let safeHtml = escapeHtml(displayedText); 
+
+    // 1. Negrito: *texto* => <strong>texto</strong>
+    safeHtml = safeHtml.replace(/\*([^\*]+)\*/g, '<strong>$1</strong>'); 
+    
+    // 2. Itálico: _texto_ => <em>texto</em>
+    safeHtml = safeHtml.replace(/_([^\s_]+)_/g, '<em>$1</em>'); 
+
+    // 3. Sublinhado: +texto+ => <u>texto</u>
+    safeHtml = safeHtml.replace(/\+([^\+]+)\+/g, '<u>$1</u>'); 
+    
+    // Processamento de links
+    const urlRegex = /(\b(https?:\/\/[^\s]+|www\.[^\s]+|[^/]\.[^\s]+?\.[^\s]+)\b)/g;
+    safeHtml = safeHtml.replace(urlRegex, (match) => {
+        let href = match;
+        if (!/^https?:\/\//i.test(match)) {
+            href = `https://${match}`;
+        }
+        return `<a href="${href}" target="_blank">${match}</a>`; 
+    });
+
+    // Processamento de Menções
+    const mentionRegex = /@([^@\r\n]+)/g; 
+    safeHtml = safeHtml.replace(mentionRegex, (match, username) => {
+        const mentionHtml = `<span class="mention" data-mention="${username}">${match}</span>`;
+        return mentionHtml;
+    });
+
+    messageText.innerHTML = safeHtml;
+    contentWrapper.appendChild(messageText);
+    
+    // --- Lógica de RENDERIZAÇÃO do STATUS/HORA ---
+    const statusWrapper = document.createElement('div');
+    statusWrapper.className = 'status-wrapper';
+
+    const timeEl = document.createElement('span');
+    timeEl.className = 'message-time';
+    timeEl.innerText = new Date(msg.timestamp||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    statusWrapper.appendChild(timeEl);
+
+    const statusDiv = document.createElement('span');
+    if(isSent){
+        setupMessageStatusListener(messageId, statusDiv, myUid, currentChat);
+    } else {
+        statusDiv.className = 'message-status';
+    }
+    statusWrapper.appendChild(statusDiv);
+
+    contentWrapper.appendChild(statusWrapper);
+    txt.appendChild(contentWrapper); 
+    
+    // --- FIM DA LÓGICA DE MENSAGEM ---
+    
+    container.appendChild(txt); 
+    chatMessagesDiv.appendChild(container);
+
+    if(wasAtBottom) scrollToBottom();
 }
-// basic HTML escape
-function escapeHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-txt.innerHTML = escapeHtml(displayed).replace(/@([\w\-]+)/g,'<span class="mention">@$1</span>');
-container.appendChild(txt);
 
-const timeDiv=document.createElement('div'); timeDiv.className='message-time'; const d=new Date(msg.timestamp||Date.now()); timeDiv.innerText=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; container.appendChild(timeDiv);
+/**
+ * MANTIDO: Lógica de preview de resposta
+ */
+function showReplyPreview(reply) {
+    const previewEl = document.getElementById('replyPreview');
+    const contentEl = previewEl.querySelector('.reply-preview-content') || document.createElement('div');
+    if(!contentEl.classList.contains('reply-preview-content')) contentEl.className = 'reply-preview-content';
+    
+    let nameEl = contentEl.querySelector('.reply-quoted-name');
+    if(!nameEl){ nameEl = document.createElement('div'); nameEl.className = 'reply-quoted-name'; contentEl.appendChild(nameEl); }
+    
+    let textEl = contentEl.querySelector('.reply-quoted-text');
+    if(!textEl){ textEl = document.createElement('div'); textEl.className = 'reply-quoted-text'; contentEl.appendChild(textEl); }
 
-// make message clickable to reply
-container.addEventListener('click',()=>{
-if(msg.user===auth.currentUser?.uid) return; // only reply to others for now
-replyTo = { id: msg.id || null, text: msg.text, username: msg.username, user: msg.user };
-showReplyPreview(replyTo);
+    const WA_GREEN = '#40C351';
+    const quotedName = reply.user === auth.currentUser.uid ? 'Você' : (reply.username || 'Usuário');
+    
+    contentEl.style.borderLeftColor = WA_GREEN;
+    nameEl.innerText = quotedName;
+    nameEl.style.color = WA_GREEN;
+    textEl.innerText = reply.text.length > 100 ? reply.text.slice(0, 97) + '...' : reply.text;
+
+    let cancelBtn = previewEl.querySelector('#cancelReply');
+    if(!cancelBtn){
+        cancelBtn = document.createElement('button');
+        cancelBtn.id = 'cancelReply';
+        cancelBtn.type = 'button';
+        cancelBtn.innerText = '✖';
+        cancelBtn.onclick = cancelReply;
+        previewEl.appendChild(contentEl);
+        previewEl.appendChild(cancelBtn);
+    }
+
+    previewEl.style.display = 'flex';
+    document.getElementById('messageInput').focus();
+}
+
+function cancelReply() {
+    replyTo = null;
+    document.getElementById('replyPreview').style.display = 'none';
+}
+
+
+/**
+ * NOVO/CORRIGIDO: Envia Ficheiro para o Storage e dados para a Database.
+ */
+async function handleFileUpload(file) {
+    if (!file || !currentChat || !auth.currentUser) return;
+
+    try {
+        const myUid = auth.currentUser.uid;
+        // 1. Mostrar estado de carregamento
+        const sendBtn = document.getElementById('sendMsgBtn');
+        sendBtn.disabled = true;
+        sendBtn.innerText = '...'; 
+        
+        // 2. Upload para o Firebase Storage
+        const filePath = `${currentChat}/${myUid}/${Date.now()}_${file.name}`;
+        const uploadTask = await uploadBytes(storageRef(storage, filePath), file);
+        const fileURL = await getDownloadURL(uploadTask.ref);
+        
+        // 3. Preparar a mensagem
+        const payloadChat = currentChat === 'public' ? 'Chat Público' : currentChat;
+        const messageInput = document.getElementById('messageInput');
+        // Pega a legenda atual do input
+        const text = messageInput.value.trim(); 
+
+        const payload = { 
+            username: currentUserName||'Usuário',
+            user: myUid,
+            // Permite texto (legenda) opcional junto com o ficheiro
+            text: text, 
+            chat: payloadChat,
+            timestamp: Date.now(),
+            mentions: [],
+            reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null,
+            
+            // Campos NOVOS para ficheiro
+            file: {
+                url: fileURL,
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                isImage: file.type.startsWith('image/') 
+            }
+        };
+
+        // 4. Enviar para a Database e Recibos (Lógica da sendMessage)
+        const pushRef = await push(dbRef(db, 'messages'), payload);
+        
+        // Regista o recibo de envio para o próprio remetente (1 tick/visto)
+        const chatIdForReceipts = currentChat;
+        await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/delivered/${myUid}`), true);
+        await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/read/${myUid}`), Date.now());
+        
+        // Atualiza contadores de não lidas
+        const updates = {};
+        if(currentChat === 'public'){
+            const usersSnapshot = await get(dbRef(db, 'users'));
+            if(usersSnapshot.exists()){
+                Object.keys(usersSnapshot.val()).forEach(uid => {
+                    if(uid !== myUid){
+                        updates[`unreads/${uid}/public`] = increment(1);
+                    }
+                });
+            }
+        } else {
+            const [user1, user2] = currentChat.split('_');
+            const otherUser = user1 === myUid ? user2 : user1;
+            updates[`unreads/${otherUser}/${currentChat}`] = increment(1);
+        }
+
+        if(Object.keys(updates).length > 0){
+            update(dbRef(db), updates);
+        }
+        
+        // 5. Limpar estado após envio
+        cancelFile(); // Usa a nova função para limpar estado e preview
+        cancelReply();
+        
+    } catch (error) {
+        console.error("Erro no upload do ficheiro:", error);
+        alert("Erro no upload do ficheiro: " + error.message);
+        // Garante que o estado seja limpo mesmo em caso de erro
+        cancelFile(); 
+    } finally {
+        // 6. Restaurar o botão de envio
+        const sendBtn = document.getElementById('sendMsgBtn');
+        sendBtn.disabled = false;
+        sendBtn.innerText = '➤';
+        scrollToBottom();
+    }
+}
+
+
+function sendMessage(){
+    const messageInput=document.getElementById('messageInput');
+    let text = messageInput.value.trim();
+    
+    if (selectedFile) {
+        // Se houver ficheiro selecionado, usa a lógica de upload
+        return handleFileUpload(selectedFile);
+    }
+
+    if(text === '' && !replyTo) return;
+    
+    // Lógica para enviar APENAS texto (como antes)
+    const myUid = auth.currentUser.uid;
+    const payloadChat = currentChat === 'public' ? 'Chat Público' : currentChat;
+    
+    const payload = { 
+        username: currentUserName||'Usuário',
+        user: myUid,
+        text: text,
+        chat: payloadChat,
+        timestamp: Date.now(),
+        mentions: [],
+        reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null
+    };
+
+    push(dbRef(db, 'messages'), payload)
+        .then(async (pushRef) => {
+            const chatIdForReceipts = currentChat;
+            // Regista o recibo de envio para o próprio remetente (1 tick/visto)
+            await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/delivered/${myUid}`), true);
+            await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/read/${myUid}`), Date.now());
+
+            // Atualiza contadores de não lidas
+            const updates = {};
+            if(currentChat === 'public'){
+                const usersSnapshot = await get(dbRef(db, 'users'));
+                if(usersSnapshot.exists()){
+                    Object.keys(usersSnapshot.val()).forEach(uid => {
+                        if(uid !== myUid){
+                            updates[`unreads/${uid}/public`] = increment(1);
+                        }
+                    });
+                }
+            } else {
+                const [user1, user2] = currentChat.split('_');
+                const otherUser = user1 === myUid ? user2 : user1;
+                updates[`unreads/${otherUser}/${currentChat}`] = increment(1);
+            }
+
+            if(Object.keys(updates).length > 0){
+                update(dbRef(db), updates);
+            }
+
+            messageInput.value = '';
+            cancelReply();
+            scrollToBottom();
+        })
+        .catch(error => {
+            console.error("Erro ao enviar mensagem:", error);
+            alert("Erro ao enviar mensagem: " + error.message);
+        });
+}
+
+
+function updateTyping(isTyping){
+    if(!auth.currentUser || currentChat==='public') return;
+    update(dbRef(db,`users/${auth.currentUser.uid}`),{ status: isTyping?'typing':'online' });
+}
+
+document.getElementById('messageInput').addEventListener('input', e => {
+    // Lógica para detecção de menções (@)
+    const text = e.target.value;
+    const suggestionsEl = document.getElementById('suggestions');
+    const lastAt = text.lastIndexOf('@');
+    
+    if(lastAt !== -1 && (text.length === lastAt + 1 || /\s@/.test(text.substring(0, lastAt + 1)))){
+        showMentions(text.substring(lastAt + 1));
+    } else {
+        suggestionsEl.style.display='none';
+    }
+
+    // Lógica para indicador de digitação (typing indicator)
+    if(typingTimeout){
+        clearTimeout(typingTimeout);
+    } else {
+        updateTyping(true);
+    }
+    typingTimeout = setTimeout(() => {
+        updateTyping(false);
+        typingTimeout = null;
+    }, 3000); 
 });
 
-chatMessagesDiv.appendChild(container);
-if(wasAtBottom) chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+function showMentions(query){
+    const suggestionsEl = document.getElementById('suggestions');
+    suggestionsEl.innerHTML = '';
+    const myUid = auth.currentUser.uid;
+    const allUsers = Object.values(userDomMap).filter(u => u.el.dataset.name.toLowerCase().includes(query.toLowerCase()));
+    
+    // Adiciona o Chat Público (opcionalmente)
+    if('Chat Público'.toLowerCase().includes(query.toLowerCase()) && currentChat !== 'public'){
+         allUsers.unshift({ el: { dataset: { name: 'Chat Público', uid: 'public' } } });
+    }
+
+    // Filtra e limita sugestões (exclui o próprio usuário e duplicação)
+    const uniqueUsers = allUsers.filter((user, index, self) =>
+        index === self.findIndex((u) => u.el.dataset.uid === user.el.dataset.uid && u.el.dataset.uid !== myUid)
+    );
+
+    if(uniqueUsers.length > 0){
+        uniqueUsers.slice(0, 5).forEach(user => {
+            const div = document.createElement('div');
+            div.innerText = `@${user.el.dataset.name}`;
+            div.addEventListener('click', () => {
+                const messageInput = document.getElementById('messageInput');
+                const currentText = messageInput.value;
+                const lastAt = currentText.lastIndexOf('@');
+                const before = currentText.slice(0, lastAt) + `@${user.el.dataset.name} `;
+                const after = messageInput.value.slice(messageInput.selectionStart);
+                messageInput.value = before + after;
+                messageInput.selectionStart = messageInput.selectionEnd = before.length;
+                messageInput.focus();
+                suggestionsEl.style.display='none';
+            });
+            suggestionsEl.appendChild(div);
+        });
+        suggestionsEl.style.display='block';
+        
+    } else {
+        suggestionsEl.style.display='none';
+    }
 }
 
-function showReplyPreview(reply){
-const el = document.getElementById('replyPreview');
-el.style.display='block';
-el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;"><div><strong>Respondendo a ${reply.username||'Usuário'}</strong><div class=\"reply-quoted\">${reply.text.length>120?reply.text.slice(0,117)+'...':reply.text}</div></div><button id=\"cancelReply\" style=\"background:none;border:none;color:#fff;cursor:pointer;font-size:16px\">✖</button></div>`;
-document.getElementById('cancelReply').addEventListener('click',()=>{replyTo=null; document.getElementById('replyPreview').style.display='none';});
-}
+function clearChat(){if(!confirm('Deseja apagar todas as mensagens do banco (isto apaga todas as conversas)?')) return; remove(dbRef(db,'messages'));
+document.getElementById('chatMessages').innerHTML='';}
 
-/* ---------- ENVIAR MENSAGEM ---------- */
-async function sendMessage(){
-const textEl=document.getElementById('messageInput'); const text=textEl.value.trim();
-if(!text||!currentChat||!auth.currentUser) return;
-// detect mentions by @username (simple) -> map to uid if possible
-const mentions = [];
-const mentionMatches = text.match(/@([\w\-]+)/g);
-if(mentionMatches){
-mentionMatches.forEach(m=>{
-const name = m.slice(1);
-// find user by display name in userDomMap
-for(const uid in userDomMap){
-if(userDomMap[uid].el && userDomMap[uid].el.dataset.name.toLowerCase()===name.toLowerCase()){mentions.push(uid);break;}
-}
-});
-}
-
-const payload = { text, username: currentUserName||'Usuário', user: auth.currentUser.uid, chat: currentChat, timestamp: Date.now(), mentions, reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null };
-await push(ref(db,'messages'), payload);
-textEl.value=''; updateTypingStatus(false);
-replyTo=null; document.getElementById('replyPreview').style.display='none';
-}
-
-/* ---------- TYPING INDICATOR ---------- */
-const messageInput=document.getElementById('messageInput');
-messageInput.addEventListener('input',()=>{
-updateTypingStatus(true);
-handleMentionSuggestions();
-});
-function updateTypingStatus(isTyping){
-if(!auth.currentUser) return;
-const statusRef=ref(db,'users/'+auth.currentUser.uid+'/status');
-set(statusRef,isTyping?'typing':'online');
-clearTimeout(typingTimeout);
-if(isTyping) typingTimeout=setTimeout(()=>set(statusRef,'online'),2000);
-}
-
-/* ---------- MENTIONS SUGGESTION UI ---------- */
-function handleMentionSuggestions(){
-const val = messageInput.value;
-const m = val.slice(0,messageInput.selectionStart).match(/@([\w\-]*)$/);
-const suggestionsEl = document.getElementById('suggestions');
-if(!m){ suggestionsEl.style.display='none'; return; }
-const query = m[1].toLowerCase();
-// collect users
-const items = [];
-Object.keys(userDomMap).forEach(uid=>{ const name = userDomMap[uid].el.dataset.name || ''; if(name.toLowerCase().includes(query)) items.push({uid,name}); });
-if(items.length===0){ suggestionsEl.style.display='none'; return; }
-suggestionsEl.innerHTML = items.map(it=>`<div data-uid="${it.uid}" data-name="${it.name}">${it.name}</div>`).join('');
-suggestionsEl.style.display='block';
-Array.from(suggestionsEl.children).forEach(ch=>{
-ch.addEventListener('click',()=>{
-const name = ch.dataset.name;
-// replace last @token with @name 
-const before = messageInput.value.slice(0,messageInput.selectionStart).replace(/@([\w\-]*)$/,'@'+name);
-const after = messageInput.value.slice(messageInput.selectionStart);
-messageInput.value = before + after;
-messageInput.focus();
-suggestionsEl.style.display='none';
-});
-});
-}
-
-/* ---------- LIMPAR MENSAGENS ---------- */
-function clearChat(){if(!confirm('Deseja apagar todas as mensagens do banco (isto apaga todas as conversas)?')) return; remove(ref(db,'messages')); document.getElementById('chatMessages').innerHTML='';}
-
-/* ---------- EVENTOS UI ---------- */
 document.getElementById('showRegisterLink').addEventListener('click',showRegister);
 document.getElementById('showLoginLink').addEventListener('click',showLogin);
 document.getElementById('registerBtn').addEventListener('click',registerUser);
@@ -519,9 +1598,13 @@ document.getElementById('loginBtn').addEventListener('click',loginUser);
 document.getElementById('logoutBtn').addEventListener('click',logout);
 document.getElementById('sendMsgBtn').addEventListener('click',sendMessage);
 document.getElementById('clearChatBtn').addEventListener('click',clearChat);
+document.getElementById('clearLocalChatBtn').addEventListener('click', clearAllMessagesLocal);
 document.getElementById('closeChatBtn').addEventListener('click',()=>{document.getElementById('chat').style.display='none'; document.getElementById('contactsListContent').parentElement.style.display='block';});
 document.getElementById('messageInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();}});
-
+// NOVO: Event listener para o botão de anexo
+document.getElementById('attachFileBtn').addEventListener('click', () => {
+    document.getElementById('fileInput').click(); 
+});
 </script>
 </body>
 </html>
