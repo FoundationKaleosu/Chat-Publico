@@ -335,8 +335,14 @@ cursor:pointer;}
     object-fit: contain;
     border-radius: 8px;
     margin-bottom: 8px;
-    cursor: zoom-in;
+    /* Cursor para indicar que é clicável (agora para download) */
+    cursor: pointer;
 }
+/* Novo: Estilo para a tag <a> que envolve a imagem para download. */
+.file-image-link {
+    display: block; /* Para garantir que o link envolva corretamente a imagem */
+}
+
 .file-doc {
     display: flex;
     align-items: center;
@@ -1093,6 +1099,7 @@ function showContextMenu(e, msgId, isSent, msg) {
 
 /**
  * Lógica para renderizar conteúdo de ficheiro (imagem ou documento) usando Base64.
+ * CORREÇÃO: Imagem agora também usa um link <a> com 'download' para forçar o download.
  */
 function renderFileContent(fileData) {
     const fileContainer = document.createElement('div');
@@ -1103,13 +1110,26 @@ function renderFileContent(fileData) {
     
     // Se for Imagem
     if (fileData.isImage) {
+        
+        // 1. Cria o link <a> para download
+        const imgLink = document.createElement('a');
+        imgLink.className = 'file-image-link';
+        imgLink.href = fileSource; // Usa o Base64 no href
+        imgLink.download = fileData.name; // Força o download com o nome original
+        imgLink.target = '_blank';
+        imgLink.title = `Clique para baixar: ${fileData.name}`;
+
+        // 2. Cria a tag <img>
         const img = document.createElement('img');
         img.className = 'file-image';
         img.src = fileSource; // Usa o Base64 diretamente como source
         img.alt = fileData.name;
-        // Opcional: Adicionar funcionalidade de zoom ou lightbox
-        img.onclick = () => window.open(fileSource, '_blank'); 
-        fileContainer.appendChild(img);
+        
+        // 3. Adiciona a imagem dentro do link
+        imgLink.appendChild(img);
+        
+        // 4. Adiciona o link (que contém a imagem) ao container
+        fileContainer.appendChild(imgLink);
     } 
     // Se for Documento (PDF, DOC, etc.)
     else {
