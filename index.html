@@ -446,8 +446,7 @@ title="Apaga todas as mensagens apenas para você.">Limpar Histórico Local</but
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
 import { getDatabase, ref as dbRef, push, onChildAdded, onChildChanged, onChildRemoved, set, get, remove, onDisconnect, update, onValue, increment, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-database.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth.js";
-// NOVO: Importar as funções do Storage
-import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-storage.js";
+// *** IMPORTANTE: FIREBASE STORAGE REMOVIDO PARA USAR BASE64 ***
 
 // *** CONFIGURAÇÃO DO FIREBASE ***
 // IMPORTANTE: Insira aqui as suas configurações reais do Firebase
@@ -456,7 +455,7 @@ apiKey: "AIzaSyBMr3KcqWq358YvERVBkSqzDsqHnqsBqCw",
 authDomain: "chat-publico-foundation.firebaseapp.com",
 databaseURL: "https://chat-publico-foundation-default-rtdb.firebaseio.com",
 projectId: "chat-publico-foundation",
-storageBucket: "chat-publico-foundation.appspot.com", // VERIFIQUE SE ISTO ESTÁ CORRETO
+storageBucket: "chat-publico-foundation.appspot.com", 
 messagingSenderId: "1028294779813",
 appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
 };
@@ -464,8 +463,7 @@ appId: "1:1028294779813:web:a5fbdc8f5a7bb6c91abe4c"
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const auth = getAuth(app);
-// NOVO: Inicializar o Storage
-const storage = getStorage(app); 
+// Firebase Storage NÃO está a ser inicializado aqui.
 
 // MAPA DE CORES PARA NICKNAMES NO CHAT PÚBLICO
 const NICKNAME_COLORS = {
@@ -527,7 +525,6 @@ function formatFileSize(bytes, decimalPoint) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
 
-// NOVO: Ficheiro atualmente selecionado (temporário)
 let selectedFile = null;
 
 function cancelFile() {
@@ -1074,6 +1071,7 @@ function showContextMenu(e, msgId, isSent, msg) {
     // Configura o botão Responder
     const replyItem = document.getElementById('contextReply');
     replyItem.onclick = () => {
+        // Se houver Base64, limita o texto para a pré-visualização.
         const textToReply = msg.text || (msg.file ? `[Ficheiro: ${msg.file.name}]` : '');
         if(!textToReply) return; // Não permite resposta a mensagens sem texto/ficheiro
         replyTo = { id: msgId, text: textToReply, username: msg.username, user: msg.user };
@@ -1094,27 +1092,33 @@ function showContextMenu(e, msgId, isSent, msg) {
 
 
 /**
- * Lógica para renderizar conteúdo de ficheiro (imagem ou documento)
+ * Lógica para renderizar conteúdo de ficheiro (imagem ou documento) usando Base64.
  */
 function renderFileContent(fileData) {
     const fileContainer = document.createElement('div');
     fileContainer.className = 'file-content';
     
+    // A URL/Source é agora o Base64 Data URL (armazenado em fileData.base64)
+    const fileSource = fileData.base64; 
+    
     // Se for Imagem
     if (fileData.isImage) {
         const img = document.createElement('img');
         img.className = 'file-image';
-        img.src = fileData.url;
+        img.src = fileSource; // Usa o Base64 diretamente como source
         img.alt = fileData.name;
         // Opcional: Adicionar funcionalidade de zoom ou lightbox
-        img.onclick = () => window.open(fileData.url, '_blank'); 
+        img.onclick = () => window.open(fileSource, '_blank'); 
         fileContainer.appendChild(img);
     } 
     // Se for Documento (PDF, DOC, etc.)
     else {
+        // Para documentos, cria um link de download direto a partir do Base64
         const docLink = document.createElement('a');
         docLink.className = 'file-doc';
-        docLink.href = fileData.url;
+        // Usa o Base64 no href e o atributo download para forçar o download com o nome original
+        docLink.href = fileSource;
+        docLink.download = fileData.name; 
         docLink.target = '_blank';
         docLink.title = `Clique para baixar: ${fileData.name}`;
 
@@ -1364,94 +1368,104 @@ function cancelReply() {
 
 
 /**
- * NOVO/CORRIGIDO: Envia Ficheiro para o Storage e dados para a Database.
+ * NOVO/CORRIGIDO: Envia Ficheiro para o Database codificado em Base64 (sem Storage).
+ * ESTA FUNÇÃO TEM LIMITE DE TAMANHO (10MB)
  */
 async function handleFileUpload(file) {
     if (!file || !currentChat || !auth.currentUser) return;
+    
+    // Limite de 10MB para a Realtime Database
+    const MAX_DB_SIZE = 10 * 1024 * 1024; 
+    if (file.size > MAX_DB_SIZE) {
+        alert(`Ficheiro muito grande (${formatFileSize(file.size)}). O limite é de 10MB para a Realtime Database.`);
+        cancelFile();
+        return;
+    }
 
-    try {
-        const myUid = auth.currentUser.uid;
-        // 1. Mostrar estado de carregamento
+    const reader = new FileReader();
+    
+    reader.onloadstart = () => {
         const sendBtn = document.getElementById('sendMsgBtn');
         sendBtn.disabled = true;
         sendBtn.innerText = '...'; 
-        
-        // 2. Upload para o Firebase Storage
-        const filePath = `${currentChat}/${myUid}/${Date.now()}_${file.name}`;
-        const uploadTask = await uploadBytes(storageRef(storage, filePath), file);
-        const fileURL = await getDownloadURL(uploadTask.ref);
-        
-        // 3. Preparar a mensagem
-        const payloadChat = currentChat === 'public' ? 'Chat Público' : currentChat;
-        const messageInput = document.getElementById('messageInput');
-        // Pega a legenda atual do input
-        const text = messageInput.value.trim(); 
+    };
 
-        const payload = { 
-            username: currentUserName||'Usuário',
-            user: myUid,
-            // Permite texto (legenda) opcional junto com o ficheiro
-            text: text, 
-            chat: payloadChat,
-            timestamp: Date.now(),
-            mentions: [],
-            reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null,
+    reader.onload = async (event) => {
+        try {
+            const myUid = auth.currentUser.uid;
+            const fileBase64 = event.target.result; // Data URL (inclui tipo e Base64)
             
-            // Campos NOVOS para ficheiro
-            file: {
-                url: fileURL,
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                isImage: file.type.startsWith('image/') 
-            }
-        };
+            // 1. Preparar a mensagem
+            const payloadChat = currentChat === 'public' ? 'Chat Público' : currentChat;
+            const messageInput = document.getElementById('messageInput');
+            const text = messageInput.value.trim(); 
 
-        // 4. Enviar para a Database e Recibos (Lógica da sendMessage)
-        const pushRef = await push(dbRef(db, 'messages'), payload);
-        
-        // Regista o recibo de envio para o próprio remetente (1 tick/visto)
-        const chatIdForReceipts = currentChat;
-        await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/delivered/${myUid}`), true);
-        await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/read/${myUid}`), Date.now());
-        
-        // Atualiza contadores de não lidas
-        const updates = {};
-        if(currentChat === 'public'){
-            const usersSnapshot = await get(dbRef(db, 'users'));
-            if(usersSnapshot.exists()){
-                Object.keys(usersSnapshot.val()).forEach(uid => {
-                    if(uid !== myUid){
-                        updates[`unreads/${uid}/public`] = increment(1);
-                    }
-                });
-            }
-        } else {
-            const [user1, user2] = currentChat.split('_');
-            const otherUser = user1 === myUid ? user2 : user1;
-            updates[`unreads/${otherUser}/${currentChat}`] = increment(1);
-        }
+            const payload = { 
+                username: currentUserName||'Usuário',
+                user: myUid,
+                text: text, 
+                chat: payloadChat,
+                timestamp: Date.now(),
+                mentions: [],
+                reply: replyTo ? { id: replyTo.id, text: replyTo.text, username: replyTo.username, user: replyTo.user } : null,
+                
+                // Campos NOVOS para ficheiro (Base64)
+                file: {
+                    base64: fileBase64, // Armazena o Base64 na Database
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    isImage: file.type.startsWith('image/') 
+                }
+            };
 
-        if(Object.keys(updates).length > 0){
-            update(dbRef(db), updates);
+            // 2. Enviar para a Database e Recibos
+            const pushRef = await push(dbRef(db, 'messages'), payload);
+            
+            const chatIdForReceipts = currentChat;
+            await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/delivered/${myUid}`), true);
+            await set(dbRef(db, `readReceipts/${chatIdForReceipts}/${pushRef.key}/read/${myUid}`), Date.now());
+            
+            // Atualiza contadores de não lidas
+            const updates = {};
+            if(currentChat === 'public'){
+                const usersSnapshot = await get(dbRef(db, 'users'));
+                if(usersSnapshot.exists()){
+                    Object.keys(usersSnapshot.val()).forEach(uid => {
+                        if(uid !== myUid){
+                            updates[`unreads/${uid}/public`] = increment(1);
+                        }
+                    });
+                }
+            } else {
+                const [user1, user2] = currentChat.split('_');
+                const otherUser = user1 === myUid ? user2 : user1;
+                updates[`unreads/${otherUser}/${currentChat}`] = increment(1);
+            }
+
+            if(Object.keys(updates).length > 0){
+                update(dbRef(db), updates);
+            }
+            
+            // 3. Limpar estado após envio
+            cancelFile(); 
+            cancelReply();
+            
+        } catch (error) {
+            console.error("Erro ao codificar ou enviar ficheiro:", error);
+            alert("Erro ao enviar ficheiro: " + error.message);
+            cancelFile(); 
+        } finally {
+            // 4. Restaurar o botão de envio
+            const sendBtn = document.getElementById('sendMsgBtn');
+            sendBtn.disabled = false;
+            sendBtn.innerText = '➤';
+            scrollToBottom();
         }
-        
-        // 5. Limpar estado após envio
-        cancelFile(); // Usa a nova função para limpar estado e preview
-        cancelReply();
-        
-    } catch (error) {
-        console.error("Erro no upload do ficheiro:", error);
-        alert("Erro no upload do ficheiro: " + error.message);
-        // Garante que o estado seja limpo mesmo em caso de erro
-        cancelFile(); 
-    } finally {
-        // 6. Restaurar o botão de envio
-        const sendBtn = document.getElementById('sendMsgBtn');
-        sendBtn.disabled = false;
-        sendBtn.innerText = '➤';
-        scrollToBottom();
-    }
+    };
+    
+    // Inicia a leitura do ficheiro como Data URL (Base64)
+    reader.readAsDataURL(file);
 }
 
 
@@ -1460,7 +1474,7 @@ function sendMessage(){
     let text = messageInput.value.trim();
     
     if (selectedFile) {
-        // Se houver ficheiro selecionado, usa a lógica de upload
+        // Se houver ficheiro selecionado, usa a lógica de upload para a DB (Base64)
         return handleFileUpload(selectedFile);
     }
 
