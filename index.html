@@ -820,10 +820,23 @@ async function setupContactsRealtime(){
     }
 
     function createUserElement(uid,userObj, chatId){
-        const div=document.createElement('div'); div.className='contact'; div.dataset.uid=uid; div.dataset.chatid=chatId; div.dataset.name=userObj.name||'Usuário';
+        const div=document.createElement('div'); 
+        div.className='contact'; 
+        div.dataset.uid=uid; 
+        div.dataset.chatid=chatId; 
+        div.dataset.name=userObj.name||'Usuário';
         const initial=(userObj.name && userObj.name[0])?userObj.name[0].toUpperCase():'?';
         const color=userObj.status==='online'?'green':userObj.status==='typing'?'yellow':'red';
-        div.innerHTML=`<div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div><div class="name">${userObj.name||'Usuário'}</div><div class="unread-count" id="unread-${chatId}"></div>`;
+        
+        // NOVO: Exibir função (grupo) ao lado do nome
+        const funcao = userObj.userGroup ? ` (${userObj.userGroup})` : '';
+        const displayName = `${userObj.name||'Usuário'}${funcao}`;
+        
+        div.innerHTML=`
+            <div class="avatar">${initial}<div class="status-dot" style="background-color:${color}"></div></div>
+            <div class="name">${displayName}</div>
+            <div class="unread-count" id="unread-${chatId}"></div>`;
+        
         div.addEventListener('click',()=>{
             openChat(chatId,userObj.name||'Usuário'); 
             resetUnread(chatId); 
@@ -1217,7 +1230,19 @@ function renderMessage(snap, msg){
     if(!isSent){ 
         const sender=document.createElement('div'); 
         sender.className='sender-name';
-        sender.innerText=msg.username||'Usuário'; 
+        
+        // NOVO: Mostrar também a função ao lado do nome no chat público
+        let displayName = msg.username || 'Usuário';
+        if (currentChat === 'public') {
+            for (const uid in userDomMap) {
+                if (msg.user === uid) {
+                    const userGroup = groupsMap.get(userDomMap[uid].group) ? userDomMap[uid].group : 'Outro';
+                    displayName += ` (${userGroup})`;
+                    break;
+                }
+            }
+        }
+        sender.innerText = displayName; 
         if(currentChat === 'public'){ 
             let senderUserObj = null; 
             for(const uid in userDomMap) { 
