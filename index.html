@@ -397,14 +397,14 @@ position: relative;
 
 <div id="registerForm" class="form-container" style="display:none;">
 <h2>Cadastro</h2>
-<input type="text" id="regName" placeholder="Nome de usuário">
-<input type="email" id="regEmail" placeholder="Email">
+<input type="text" id="regName" placeholder="Nome de Usuário">
+<input type="email" id="regEmail" placeholder="E-mail">
 <input type="password" id="regPassword" placeholder="Senha">
-<input type="text" id="regGroup" placeholder="Função (ex: Professor, Aluno, Zero Absoluto)">
+<input type="text" id="regGroup" placeholder="Função / Cargo">
 <button id="registerBtn">Cadastrar</button>
 <div class="link" id="showLoginLink">Já tem conta?
 Entrar</div>
-<div class="small-note">Ao cadastrar com uma "Função" nova, a aba correspondente será criada automaticamente.</div>
+<div class="small-note">Seja Bem-Vindo a Foundation Kaleosu</div>
 </div>
 
 <div class="whatsapp-container" id="whatsappApp">
@@ -432,7 +432,19 @@ title="Apaga todas as mensagens apenas para você.">Limpar Histórico Local</but
 <span id="chatHeader">Chat Público</span>
 <button id="closeChatBtn" style="background:none; color:#E1E1E1; font-size:18px; border:none; cursor:pointer;">✖</button>
 </div>
+<div id="globalStatusBar" style="background:#1E1E1E;color:#E1E1E1;padding:8px;text-align:center;font-size:14px;border-bottom:1px solid #333;">
+|| 🟢 0 Online || 🔴 0 Offline ||
+</div>
 <div class="chat-messages" id="chatMessages"></div>
+
+<!-- Modal de lista de usuários online -->
+<div id="onlineListModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:2000;">
+  <div style="background:#1E1E1E; padding:20px; border-radius:10px; width:90%; max-width:400px; color:#E1E1E1; max-height:70%; overflow-y:auto;">
+    <h3 style="margin-bottom:10px; text-align:center;">🟢 Usuários Online</h3>
+    <div id="onlineUsersList" style="margin-bottom:10px;"></div>
+    <button id="closeOnlineListBtn" style="background:#075E54;color:#fff;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;width:100%;">Fechar</button>
+  </div>
+</div>
 <div id="replyPreview" style="display:none;"></div>
 <div id="filePreview" style="display:none;"></div> 
 <div class="chat-input suggestions">
@@ -701,7 +713,8 @@ await setupContactsRealtime();
 setupUnreadListener(); 
 
 showTab('Chat Público');
-openChat('public','Chat Público'); 
+openChat('public','Chat Público');
+setupGlobalStatusMonitor(); 
 } else {
 if(unreadListenerUnsub) unreadListenerUnsub();
 document.getElementById('whatsappApp').style.display='none';
@@ -1669,6 +1682,68 @@ document.getElementById('attachFileBtn').addEventListener('click', () => {
 });
 
 // --- MENÇÃO CLICÁVEL ---
+
+/* ---------- MONITOR GLOBAL DE STATUS (ONLINE / DIGITANDO / OFFLINE) ---------- */
+function setupGlobalStatusMonitor(){
+    const statusBar = document.getElementById('globalStatusBar');
+    const onlineListModal = document.getElementById('onlineListModal');
+    const onlineUsersList = document.getElementById('onlineUsersList');
+    const closeOnlineListBtn = document.getElementById('closeOnlineListBtn');
+
+    closeOnlineListBtn.addEventListener('click', () => {
+        onlineListModal.style.display = 'none';
+    });
+
+    const usersRef = dbRef(db, 'users');
+    onValue(usersRef, (snapshot) => {
+        if (!snapshot.exists()) return;
+
+        const users = snapshot.val();
+        let onlineCount = 0;
+        let typingCount = 0;
+        let offlineCount = 0;
+        const onlineUsers = [];
+
+        Object.keys(users).forEach(uid => {
+            const user = users[uid];
+            if (!user || !user.status) return;
+            if (user.status === 'online') onlineCount++;
+            else if (user.status === 'typing') typingCount++;
+            else offlineCount++;
+
+            if (user.status === 'online' || user.status === 'typing') {
+                const funcao = user.userGroup ? ` (${user.userGroup})` : '';
+                onlineUsers.push({ uid, name: `${user.name||'Usuário'}${funcao}` });
+            }
+        });
+
+        statusBar.innerHTML = `|| 🟢 ${onlineCount} Online || 🔴 ${offlineCount} Offline ||`;
+
+        // Clique para abrir modal com lista
+        statusBar.onclick = () => {
+            onlineUsersList.innerHTML = '';
+            if (onlineUsers.length === 0) {
+                onlineUsersList.innerHTML = '<p style="text-align:center;color:#bbb;">Ninguém online no momento</p>';
+            } else {
+                onlineUsers.forEach(u => {
+                    const div = document.createElement('div');
+                    div.textContent = u.name;
+                    div.style.padding = '6px';
+                    div.style.cursor = 'pointer';
+                    div.style.borderBottom = '1px solid #333';
+                    div.addEventListener('click', () => {
+                        startPrivateChat(u.uid, u.name);
+                        onlineListModal.style.display = 'none';
+                    });
+                    onlineUsersList.appendChild(div);
+                });
+            }
+            onlineListModal.style.display = 'flex';
+        };
+    });
+}
+
+
 document.addEventListener('click', (e) => {
     if (e.target.classList.contains('mention')) {
         const username = e.target.dataset.mention;
